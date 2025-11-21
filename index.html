@@ -37,22 +37,24 @@
         }
 
         .selector-header { 
-            text-align: center; flex-shrink: 0; margin-bottom: 10px; width: 100%;
-            display: flex; flex-direction: column; align-items: center; gap: 5px;
+            text-align: center; flex-shrink: 0; margin-bottom: 15px; width: 100%;
+            display: flex; flex-direction: column; align-items: center; gap: 10px;
             padding: 0 10px;
             background: #050505;
             z-index: 5;
+            border-bottom: 1px solid #222;
+            padding-bottom: 15px;
         }
         
         .selector-header h1 {
-            margin: 0; color: #ff4400; font-style: italic; text-transform: uppercase; font-size: 32px; letter-spacing: 3px;
+            margin: 0; color: #ff4400; font-style: italic; text-transform: uppercase; font-size: 36px; letter-spacing: 3px;
             text-shadow: 0 0 20px rgba(255, 68, 0, 0.6);
             line-height: 1.2;
         }
 
         .settings-panel {
             display: flex; align-items: center; gap: 10px;
-            background: rgba(20, 20, 20, 0.8); padding: 4px 12px; border-radius: 20px;
+            background: rgba(20, 20, 20, 0.8); padding: 6px 15px; border-radius: 20px;
             border: 1px solid #333; pointer-events: auto;
         }
         .settings-label { color: #aaa; font-size: 12px; font-weight: bold; text-transform: uppercase; }
@@ -62,42 +64,22 @@
             cursor: pointer; outline: none;
         }
         
-        button.reset-btn {
-            background: #330000; border: 1px solid #550000; color: #ff5555;
-            font-size: 10px; padding: 4px 8px; cursor: pointer; border-radius: 4px;
-        }
-
         /* Contenedor con Scroll */
         .level-scroll-area {
             flex: 1; width: 100%; overflow-y: auto; 
-            padding: 0 20px 80px 20px;
+            padding: 10px 20px 80px 20px;
             box-sizing: border-box; 
             -webkit-overflow-scrolling: touch;
+            display: flex; justify-content: center;
         }
 
-        /* ZONAS */
-        .zone-container {
-            margin-bottom: 40px;
-            width: 100%; max-width: 1100px;
-            margin-left: auto; margin-right: auto;
-        }
-
-        .zone-header {
-            color: #fff; font-size: 24px; font-weight: 800; text-transform: uppercase;
-            margin-bottom: 15px; padding-bottom: 5px; border-bottom: 2px solid #333;
-            display: flex; justify-content: space-between; align-items: flex-end;
-        }
-        .zone-header span.status { font-size: 14px; color: #666; font-weight: normal; }
-        
-        .zone-locked .zone-header { color: #555; border-color: #222; }
-        .zone-locked .level-grid { opacity: 0.3; pointer-events: none; }
-
-        /* GRID */
+        /* GRID UNIFICADO */
         .level-grid {
             display: grid; 
-            grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+            grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
             gap: 15px; 
             width: 100%;
+            max-width: 1200px;
         }
 
         .level-card {
@@ -111,26 +93,16 @@
         }
         
         .level-card:hover, .level-card:active { 
-            transform: translateY(-2px); border-color: #ff8800; 
-            box-shadow: 0 5px 20px rgba(255, 100, 0, 0.2); z-index: 10; 
+            transform: translateY(-3px); border-color: #ff8800; 
+            box-shadow: 0 5px 20px rgba(255, 100, 0, 0.4); z-index: 10; 
         }
         
-        .level-card.locked {
-            cursor: not-allowed; border-color: #222;
-        }
-        .level-card.locked .card-image { opacity: 0.1; }
-        .level-card.locked::after {
-            content: "🔒"; font-size: 24px; position: absolute;
-            top: 50%; left: 50%; transform: translate(-50%, -50%);
-            opacity: 0.5;
-        }
-
         .card-image { width: 100%; height: 100%; object-fit: cover; opacity: 0.8; transition: opacity 0.2s; }
-        .level-card:not(.locked):hover .card-image { opacity: 1; }
+        .level-card:hover .card-image { opacity: 1; }
 
         .card-num {
-            position: absolute; top: 5px; left: 8px; font-size: 18px; font-weight: 900; 
-            color: rgba(255,255,255,0.2); z-index: 1; font-style: italic;
+            position: absolute; top: 5px; left: 8px; font-size: 20px; font-weight: 900; 
+            color: rgba(255,255,255,0.3); z-index: 1; font-style: italic;
         }
 
         .card-title-overlay {
@@ -233,11 +205,12 @@
                         <option value="120">120</option>
                         <option value="0">MAX</option>
                     </select>
-                    <button class="reset-btn" onclick="resetProgress()">Reset</button>
                 </div>
             </div>
-            <div class="level-scroll-area" id="main-scroll">
-                <!-- Aquí se generan las zonas -->
+            <div class="level-scroll-area">
+                <div id="main-grid" class="level-grid">
+                    <!-- Niveles generados aquí -->
+                </div>
             </div>
         </div>
 
@@ -257,7 +230,7 @@
 
         <div id="level-complete" class="modal-screen win-style hidden">
             <h2 style="color: #00ff00; margin:0; font-size: 32px;">¡NIVEL COMPLETADO!</h2>
-            <p style="color:#bbb; margin:5px 0 20px 0; font-size: 14px;">¡Zona desbloqueada!</p>
+            <p style="color:#bbb; margin:5px 0 20px 0; font-size: 14px;">Bien hecho</p>
             <button class="action-btn" onclick="nextLevel()">Siguiente</button>
             <button class="secondary-btn" onclick="showMenu()">Menú Principal</button>
         </div>
@@ -274,17 +247,16 @@
             cameraHeight: 18
         };
 
-        // --- DEFINICIÓN DE ZONAS ---
-        const ZONES = [
-            { name: "Zona 1: Curvas", color: "#00ff88", theme: { floor:0xaaaaaa, fog:0x000010, obs:0x00ffff, shape:'box', filter:'#00ffff' } },
-            { name: "Zona 2: Colinas",   color: "#ff00ff", theme: { floor:0x220022, fog:0x110033, obs:0xff00ff, shape:'cylinder', filter:'#ff00ff' } },
-            { name: "Zona 3: Descenso", color: "#00ff00", theme: { floor:0x001100, fog:0x002200, obs:0x00ff00, shape:'box', filter:'#00ff00' } },
-            { name: "Zona 4: Vértigo",  color: "#00ccff", theme: { floor:0xddeeff, fog:0x223344, obs:0x0088ff, shape:'cone', filter:'#0088ff' } },
-            { name: "Zona 5: Caos",  color: "#ff4400", theme: { floor:0x111111, fog:0x050000, obs:0xff4400, shape:'cylinder', filter:'#ff4400' } }
+        // --- TEMÁTICAS VISUALES (Sin afectar la jugabilidad) ---
+        const THEMES = [
+            { name: "Inicio",   theme: { floor:0xaaaaaa, fog:0x000010, obs:0x00ffff, shape:'box', filter:'#00ffff' } },
+            { name: "Neón",     theme: { floor:0x220022, fog:0x110033, obs:0xff00ff, shape:'cylinder', filter:'#ff00ff' } },
+            { name: "Tóxico",   theme: { floor:0x001100, fog:0x002200, obs:0x00ff00, shape:'box', filter:'#00ff00' } },
+            { name: "Hielo",    theme: { floor:0xddeeff, fog:0x223344, obs:0x0088ff, shape:'cone', filter:'#0088ff' } },
+            { name: "Magma",    theme: { floor:0x111111, fog:0x050000, obs:0xff4400, shape:'cylinder', filter:'#ff4400' } }
         ];
 
-        const LEVELS_PER_ZONE = 15;
-        const TOTAL_LEVELS = ZONES.length * LEVELS_PER_ZONE;
+        const TOTAL_LEVELS = 75;
         let LEVELS = []; 
 
         // --- GENERADOR DE NIVELES "ROLLERCOASTER" ---
@@ -296,70 +268,59 @@
 
         function generateAllLevels() {
             LEVELS = [];
-            let globalIndex = 0;
             
-            ZONES.forEach((zone, zIdx) => {
-                for (let i = 0; i < LEVELS_PER_ZONE; i++) {
-                    const lvlNum = i + 1;
-                    const progress = globalIndex / TOTAL_LEVELS; 
-                    
-                    // Longitud CAPADA: De 12 segmentos a 25 máximo. No más niveles infinitos.
-                    const segments = 12 + Math.floor(Math.min(globalIndex, 30) * 0.4); 
+            for(let i=0; i<TOTAL_LEVELS; i++) {
+                // Calcular temática cíclica (cada 15 niveles cambia)
+                const themeIdx = Math.floor(i / 15) % THEMES.length;
+                const theme = THEMES[themeIdx].theme;
+                
+                const progress = i / TOTAL_LEVELS; 
+                
+                // Longitud CAPADA: No niveles infinitos
+                const segments = 12 + Math.floor(Math.min(i, 30) * 0.4); 
 
-                    const data = [_.S(40)]; // Salida
-                    
-                    let lastDir = 0; // Para alternar curvas
+                const data = [_.S(40)]; // Salida segura
+                
+                let lastDir = 0; 
 
-                    for(let s=0; s<segments; s++) {
-                        const r = Math.random();
-                        // Segmentos más cortos = más acción por segundo
-                        const segLen = 40 + (Math.random() * 30); 
-                        
-                        // --- LÓGICA DE DISEÑO POR NIVELES ---
-                        
-                        if (globalIndex < 3) { 
-                            // NIVELES 1-3: "NO TOCAR NADA" ESTÁ PROHIBIDO
-                            // Curvas suaves obligatorias, sin rectas largas.
-                            const dir = (s % 2 === 0) ? 1 : -1; // Zigzag suave
-                            data.push(_.T(dir, 0.3, segLen));
-                        } 
-                        else {
-                            // RESTO DEL JUEGO: GEOMETRÍA DIVERTIDA
-                            // Probabilidad alta de cosas "divertidas" (curvas/pendientes)
-                            // Probabilidad baja de rectas aburridas
+                for(let s=0; s<segments; s++) {
+                    const r = Math.random();
+                    const segLen = 40 + (Math.random() * 30); 
+                    
+                    // --- LÓGICA DE DISEÑO ---
+                    if (i < 3) { 
+                        // NIVELES 1-3: PURO MANEJO (Sin rectas aburridas, curvas suaves)
+                        const dir = (s % 2 === 0) ? 1 : -1; 
+                        data.push(_.T(dir, 0.3, segLen));
+                    } 
+                    else {
+                        // RESTO: GEOMETRÍA DIVERTIDA
+                        if (r < 0.2) { // Recta (Solo 20%)
+                            data.push(_.S(segLen));
+                        } else if (r < 0.6) { // Curvas (40%)
+                            let dir = Math.random() > 0.5 ? 1 : -1;
+                            if (Math.random() < 0.3) dir = -lastDir; 
+                            lastDir = dir;
                             
-                            if (r < 0.2) { // Recta (Solo 20% probabilidad)
-                                data.push(_.S(segLen));
-                            } else if (r < 0.6) { // Curvas (40%)
-                                // Evitar dos giros fuertes al mismo lado
-                                let dir = Math.random() > 0.5 ? 1 : -1;
-                                if (Math.random() < 0.3) dir = -lastDir; // Fomentar zigzag
-                                lastDir = dir;
-                                
-                                // Fuerza aumenta con el progreso, pero no absurda
-                                const force = 0.5 + (progress * 1.5); 
-                                data.push(_.T(dir, force, segLen));
-                            } else { // Pendientes (40%) - ¡La salsa del juego!
-                                const slope = (Math.random() > 0.5 ? 0.3 : -0.3) * (0.8 + progress * 0.5);
-                                data.push(_.V(slope, segLen));
-                                // Pequeña curva después de la pendiente para suavizar
-                                data.push(_.T(Math.random() > 0.5 ? 1:-1, 0.2, 20)); 
-                            }
+                            const force = 0.5 + (progress * 1.5); 
+                            data.push(_.T(dir, force, segLen));
+                        } else { // Pendientes (40%) - Rollercoaster
+                            const slope = (Math.random() > 0.5 ? 0.3 : -0.3) * (0.8 + progress * 0.5);
+                            data.push(_.V(slope, segLen));
+                            data.push(_.T(Math.random() > 0.5 ? 1:-1, 0.2, 20)); 
                         }
                     }
-                    data.push(_.S(60)); // Meta
-
-                    LEVELS.push({
-                        id: globalIndex + 1,
-                        zoneId: zIdx,
-                        name: `Nivel ${globalIndex + 1}`,
-                        theme: zone.theme,
-                        data: data,
-                        difficultyVal: progress
-                    });
-                    globalIndex++;
                 }
-            });
+                data.push(_.S(60)); // Meta
+
+                LEVELS.push({
+                    id: i + 1,
+                    name: `Nivel ${i + 1}`,
+                    theme: theme,
+                    data: data,
+                    difficultyVal: progress
+                });
+            }
         }
         generateAllLevels();
 
@@ -376,7 +337,6 @@
         let maxFPS = 60; 
         let lastFrameTime = 0;
         let fadeInterval; 
-        let maxUnlockedLevel = parseInt(localStorage.getItem('firedodo_progress') || "1");
 
         // --- AUDIO ---
         const bgm = new Audio('bgm.mp3');
@@ -436,72 +396,37 @@
             requestAnimationFrame(animate);
         }
 
-        // --- LÓGICA DE MENÚ ---
-        function resetProgress() {
-            if(confirm("¿Borrar todo el progreso?")) {
-                maxUnlockedLevel = 1;
-                localStorage.setItem('firedodo_progress', maxUnlockedLevel);
-                createLevelMenu();
-            }
-        }
-
+        // --- MENÚ UNIFICADO ---
         function createLevelMenu() {
-            const container = document.getElementById('main-scroll');
-            container.innerHTML = ''; 
+            const grid = document.getElementById('main-grid');
+            grid.innerHTML = ''; 
             
-            ZONES.forEach((zone, zIdx) => {
-                const startLvl = zIdx * LEVELS_PER_ZONE + 1;
-                const isZoneUnlocked = zIdx === 0 || maxUnlockedLevel >= startLvl;
-
-                const zoneDiv = document.createElement('div');
-                zoneDiv.className = `zone-container ${isZoneUnlocked ? '' : 'zone-locked'}`;
+            LEVELS.forEach((lvl, index) => {
+                const card = document.createElement('div');
+                card.className = 'level-card';
+                card.onclick = () => startLevel(index);
                 
-                const header = document.createElement('div');
-                header.className = 'zone-header';
-                header.style.borderColor = isZoneUnlocked ? zone.color : '#333';
-                header.style.color = isZoneUnlocked ? zone.color : '#555';
-                header.innerHTML = `<span>${zone.name}</span> <span class="status">${isZoneUnlocked ? '' : 'BLOQUEADO'}</span>`;
+                const img = document.createElement('img');
+                img.className = 'card-image';
+                const hexColor = lvl.theme.fog.toString(16).padStart(6, '0');
+                img.src = `https://placehold.co/300x160/${hexColor}/ffffff?text=%20`;
+                card.appendChild(img);
                 
-                const grid = document.createElement('div');
-                grid.className = 'level-grid';
+                const num = document.createElement('div');
+                num.className = 'card-num';
+                num.innerText = lvl.id;
+                card.appendChild(num);
 
-                for(let i=0; i<LEVELS_PER_ZONE; i++) {
-                    const globalIdx = startLvl + i - 1; 
-                    const lvlData = LEVELS[globalIdx];
-                    const isLevelUnlocked = (globalIdx + 1) <= maxUnlockedLevel;
-                    
-                    const card = document.createElement('div');
-                    card.className = `level-card ${isLevelUnlocked ? '' : 'locked'}`;
-                    if(isLevelUnlocked) {
-                        card.onclick = () => startLevel(globalIdx);
-                    }
+                const title = document.createElement('div');
+                title.className = 'card-title-overlay';
+                title.innerText = lvl.name;
+                card.appendChild(title);
 
-                    if (isLevelUnlocked) {
-                        const img = document.createElement('img');
-                        img.className = 'card-image';
-                        const hexColor = lvlData.theme.fog.toString(16).padStart(6, '0');
-                        img.src = `https://placehold.co/300x160/${hexColor}/ffffff?text=%20`;
-                        card.appendChild(img);
-                        
-                        const num = document.createElement('div');
-                        num.className = 'card-num';
-                        num.innerText = i + 1;
-                        card.appendChild(num);
+                const grad = document.createElement('div');
+                grad.className = 'card-gradient';
+                card.appendChild(grad);
 
-                        const title = document.createElement('div');
-                        title.className = 'card-title-overlay';
-                        title.innerText = lvlData.name;
-                        card.appendChild(title);
-
-                        const grad = document.createElement('div');
-                        grad.className = 'card-gradient';
-                        card.appendChild(grad);
-                    }
-                    grid.appendChild(card);
-                }
-                zoneDiv.appendChild(header);
-                zoneDiv.appendChild(grid);
-                container.appendChild(zoneDiv);
+                grid.appendChild(card);
             });
         }
 
@@ -534,7 +459,7 @@
             const level = LEVELS[idx];
             const theme = level.theme;
 
-            document.getElementById('level-display').innerText = `Nivel ${level.id} - ${ZONES[level.zoneId].name}`;
+            document.getElementById('level-display').innerText = `Nivel ${level.id}`;
 
             scene.fog.color.setHex(theme.fog);
             document.getElementById('color-overlay').style.backgroundColor = theme.filter;
@@ -566,9 +491,8 @@
                 scene.add(mesh);
                 pathSegments.push(mesh);
 
-                // --- OBSTÁCULOS (MINIMIZADOS) ---
+                // --- OBSTÁCULOS MINIMIZADOS ---
                 // Niveles 1-4: CERO pinchos.
-                // Niveles 5+: Muy pocos pinchos (max 15%), confía en la caída.
                 let obsChance = 0;
                 if (level.id > 4) {
                     obsChance = 0.05 + (level.difficultyVal * 0.10); // Max 15%
@@ -632,7 +556,6 @@
             document.getElementById('hud-container').style.display = 'none';
             document.getElementById('ui-layer').style.background = "rgba(5, 5, 10, 0.98)";
             document.getElementById('color-overlay').style.backgroundColor = "transparent";
-            createLevelMenu(); 
             document.getElementById('level-selector').classList.remove('hidden');
         }
         function nextLevel() {
@@ -705,7 +628,6 @@
                 raycaster.set(rayPos, downVec);
                 const hits = raycaster.intersectObjects(pathSegments);
                 
-                // --- CORRECCIÓN DE CÁMARA (SUAVE) ---
                 let currentSlope = 0;
 
                 if(hits.length > 0) {
@@ -718,23 +640,17 @@
                         if(hit.object.userData.isFinish) {
                             isGameActive = false;
                             playWinSound();
-                            if (currentLevelIdx + 2 > maxUnlockedLevel) {
-                                maxUnlockedLevel = currentLevelIdx + 2;
-                                localStorage.setItem('firedodo_progress', maxUnlockedLevel);
-                            }
                             document.getElementById('level-complete').classList.remove('hidden');
                         }
                     }
                 }
 
-                // Lógica de cámara proporcional (Sin saltos)
-                // Si slope < 0 (bajada), subimos cámara. 
-                // Factor de suavizado aumentado para evitar tirones
+                // Cámara Dinámica Suave
                 const slopeFactor = Math.max(0, -currentSlope * 120); 
                 const targetH = CONFIG.cameraHeight + slopeFactor;
                 const targetD = CONFIG.cameraDist - (slopeFactor * 0.15);
 
-                currentCamHeight += (targetH - currentCamHeight) * 3.0 * dt; // Lerp un poco más rápido pero suave
+                currentCamHeight += (targetH - currentCamHeight) * 3.0 * dt; 
                 currentCamDist += (targetD - currentCamDist) * 3.0 * dt;
 
                 if(player.position.y < -500) {
@@ -767,14 +683,11 @@
                 const camOff = new THREE.Vector3(0, currentCamHeight, currentCamDist);
                 camOff.applyAxisAngle(new THREE.Vector3(0,1,0), player.rotation.y);
                 const target = player.position.clone().add(camOff);
-                // Lerp más suave para la posición de la cámara
                 const lerp = 1 - Math.exp(-8 * dt); 
                 camera.position.lerp(target, lerp);
                 
-                // LookAt suavizado
                 const extraHeight = Math.max(0, currentCamHeight - CONFIG.cameraHeight);
                 const lookDownOffset = -extraHeight * 0.6; 
-
                 const lookTarget = player.position.clone().add(new THREE.Vector3(0, lookDownOffset, -30).applyAxisAngle(new THREE.Vector3(0,1,0), player.rotation.y));
                 camera.lookAt(lookTarget);
             }
