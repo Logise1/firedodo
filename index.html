@@ -34,17 +34,19 @@
             pointer-events: auto;
             display: flex; flex-direction: column; align-items: center;
             box-sizing: border-box;
-            padding: 20px 0 0 0;
+            padding-top: 20px; /* Espacio arriba para el título */
         }
 
         .selector-header { 
             text-align: center; flex-shrink: 0; margin-bottom: 10px; width: 100%;
             display: flex; flex-direction: column; align-items: center; gap: 10px;
+            padding: 0 10px;
         }
         
         .selector-header h1 {
             margin: 0; color: #ff4400; font-style: italic; text-transform: uppercase; font-size: 42px; letter-spacing: 3px;
             text-shadow: 0 0 20px #ff4400;
+            line-height: 1;
         }
 
         .settings-panel {
@@ -60,14 +62,18 @@
         }
 
         .level-grid-container {
-            flex: 1; width: 100%; overflow-y: auto; padding: 10px 20px 40px 20px;
+            flex: 1; width: 100%; overflow-y: auto; 
+            padding: 10px 20px 40px 20px; /* Padding desktop default */
             box-sizing: border-box; display: flex; justify-content: center;
             -webkit-overflow-scrolling: touch;
         }
 
         .level-grid {
-            display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            display: grid; 
+            /* Default Desktop: Min 200px */
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
             gap: 20px; width: 100%; max-width: 1200px;
+            padding-bottom: 50px; /* Espacio extra final */
         }
 
         .level-card {
@@ -106,6 +112,30 @@
         .card-gradient {
             position: absolute; bottom: 0; left: 0; width: 100%; height: 70%;
             background: linear-gradient(to top, rgba(0,0,0,0.95), transparent); pointer-events: none;
+        }
+
+        /* --- MEDIA QUERY PARA MÓVILES (La Magia) --- */
+        @media (max-width: 600px) {
+            .level-grid-container {
+                padding: 10px; /* Menos padding lateral */
+            }
+            .level-grid {
+                /* Tarjetas más pequeñas para que quepan 2 columnas */
+                grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); 
+                gap: 10px; /* Menos hueco entre tarjetas */
+            }
+            .selector-header h1 {
+                font-size: 28px; /* Título más pequeño */
+            }
+            .card-title-overlay {
+                font-size: 12px; /* Texto tarjeta más pequeño */
+                bottom: 6px; left: 6px;
+            }
+            .card-badge {
+                font-size: 9px;
+                padding: 2px 4px;
+                bottom: 6px; right: 6px;
+            }
         }
 
         /* --- HUD & MODALES --- */
