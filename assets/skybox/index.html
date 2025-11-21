@@ -1,0 +1,609 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Neon Disc Run - FPS Select</title>
+    <style>
+        /* --- ESTILOS GENERALES --- */
+        body { margin: 0; overflow: hidden; background-color: #000; font-family: 'Segoe UI', Tahoma, sans-serif; touch-action: none; user-select: none; -webkit-user-select: none; }
+        canvas { display: block; }
+        
+        /* --- UI PRINCIPAL --- */
+        #ui-layer {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            z-index: 100; pointer-events: none;
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+            background: rgba(15, 15, 20, 0.85);
+        }
+
+        /* --- SELECTOR DE NIVELES (LAYOUT FLEXIBLE) --- */
+        #level-selector {
+            width: 100%; height: 100%;
+            pointer-events: auto;
+            display: flex; flex-direction: column; /* Organizar verticalmente */
+            align-items: center;
+            box-sizing: border-box;
+            padding: 20px 0 0 0;
+        }
+
+        /* Cabecera fija (no scrollea) */
+        .selector-header { 
+            text-align: center; 
+            flex-shrink: 0; /* No encoger */
+            margin-bottom: 10px;
+            width: 100%;
+            display: flex; flex-direction: column; align-items: center; gap: 10px;
+        }
+        
+        .selector-header h1 {
+            margin: 0; color: #0ff; font-style: italic; text-transform: uppercase; font-size: 36px; letter-spacing: 3px;
+            text-shadow: 0 0 20px #0ff;
+        }
+
+        /* Panel de Ajustes */
+        .settings-panel {
+            display: flex; align-items: center; gap: 10px;
+            background: rgba(0,0,0,0.6); padding: 5px 15px; border-radius: 20px;
+            border: 1px solid #333; pointer-events: auto;
+        }
+        .settings-label { color: #aaa; font-size: 14px; font-weight: bold; }
+        #fps-select {
+            background: #222; color: #fff; border: 1px solid #555;
+            border-radius: 5px; padding: 2px 5px; font-family: inherit; font-size: 14px;
+            cursor: pointer; outline: none;
+        }
+
+        /* Cuadrícula Scrollable (ocupa el resto del espacio) */
+        .level-grid-container {
+            flex: 1; /* Ocupar espacio restante */
+            width: 100%;
+            overflow-y: auto; /* Scroll interno */
+            padding: 10px 20px 40px 20px; /* Espacio abajo para no cortar */
+            box-sizing: border-box;
+            display: flex; justify-content: center; /* Centrar grid si es pequeño */
+            -webkit-overflow-scrolling: touch;
+        }
+
+        .level-grid {
+            display: grid;
+            /* Ajuste responsive: tarjetas mínimas de 200px */
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 20px;
+            width: 100%;
+            max-width: 1200px; /* Ancho máximo de contenido */
+        }
+
+        /* Tarjetas de Nivel */
+        .level-card {
+            background: #050505; border-radius: 12px; overflow: hidden; cursor: pointer;
+            transition: transform 0.2s, border-color 0.2s, box-shadow 0.2s; 
+            display: flex; flex-direction: column; position: relative; 
+            border: 1px solid #333; aspect-ratio: 16 / 9;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.6);
+        }
+        .level-card:hover { 
+            transform: translateY(-5px); 
+            border-color: #0ff; 
+            box-shadow: 0 10px 25px rgba(0, 255, 255, 0.2);
+            z-index: 10; 
+        }
+
+        .card-image { width: 100%; height: 100%; object-fit: cover; opacity: 0.6; transition: opacity 0.2s; }
+        .level-card:hover .card-image { opacity: 1; }
+
+        .card-badge {
+            position: absolute; bottom: 10px; right: 10px; background: rgba(0,0,0,0.9);
+            color: #fff; padding: 4px 8px; border-radius: 4px; font-size: 11px; font-weight: bold;
+            text-transform: uppercase; border: 1px solid currentColor; z-index: 2;
+        }
+        .diff-Easy { color: #0f0; border-color: #0f0; }
+        .diff-Medium { color: #ffaa00; border-color: #ffaa00; }
+        .diff-Hard { color: #ff0000; border-color: #ff0000; }
+        .diff-Insane { color: #aa00ff; border-color: #aa00ff; }
+        .diff-Expert { color: #00ffff; border-color: #00ffff; }
+
+        .card-title-overlay {
+            position: absolute; bottom: 10px; left: 10px; color: #fff; font-size: 16px; font-weight: 800;
+            text-shadow: 2px 2px 4px #000; z-index: 2; max-width: 70%; 
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+        }
+        .card-gradient {
+            position: absolute; bottom: 0; left: 0; width: 100%; height: 70%;
+            background: linear-gradient(to top, rgba(0,0,0,0.95), transparent); pointer-events: none;
+        }
+
+        /* --- HUD & MODALES --- */
+        #hud-container { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; display: none; }
+        #level-display { 
+            position: absolute; top: 20px; left: 20px; 
+            font-size: 22px; font-weight: bold; color: #0ff; 
+            text-shadow: 0 0 5px #000; background: rgba(0,0,0,0.6); 
+            padding: 8px 15px; border-radius: 8px; border: 1px solid rgba(0,255,255,0.3);
+        }
+        #controls-hint { 
+            position: absolute; bottom: 30px; width: 100%; text-align: center; 
+            font-size: 14px; color: rgba(255,255,255,0.5); text-transform: uppercase; letter-spacing: 2px; 
+        }
+
+        .modal-screen {
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            background: rgba(10, 15, 20, 0.98); padding: 40px; border-radius: 20px;
+            border: 2px solid #ff3333; text-align: center; pointer-events: auto;
+            display: flex; flex-direction: column; gap: 20px; min-width: 300px;
+            box-shadow: 0 0 60px rgba(0,0,0,0.9);
+        }
+        .win-style { border-color: #00ff00; }
+
+        button.action-btn {
+            background: linear-gradient(90deg, #00ffff, #0088ff); color: #000; border: none;
+            padding: 15px 40px; font-size: 20px; font-weight: bold; cursor: pointer; border-radius: 50px;
+            text-transform: uppercase; box-shadow: 0 0 20px rgba(0, 255, 255, 0.3);
+            transition: transform 0.1s;
+        }
+        button.action-btn:active { transform: scale(0.95); }
+
+        /* --- CONTROLES --- */
+        .control-zone { position: absolute; top: 0; height: 100%; width: 50%; z-index: 10; pointer-events: auto; }
+        #left-zone { left: 0; }
+        #right-zone { right: 0; }
+        .hidden { display: none !important; }
+        
+        #landscape-warning {
+            display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: #000; z-index: 9999; color: white;
+            justify-content: center; align-items: center; flex-direction: column;
+        }
+        @media screen and (orientation: portrait) { #landscape-warning { display: flex; } }
+        
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: rgba(0,0,0,0.3); }
+        ::-webkit-scrollbar-thumb { background: #333; border-radius: 4px; }
+    </style>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+</head>
+<body>
+
+    <div id="landscape-warning">
+        <h1>Gira tu móvil</h1>
+        <div style="font-size: 40px; margin-top: 20px;">↻</div>
+    </div>
+
+    <div id="left-zone" class="control-zone"></div>
+    <div id="right-zone" class="control-zone"></div>
+
+    <div id="ui-layer">
+        <!-- MENU -->
+        <div id="level-selector">
+            <div class="selector-header">
+                <h1>NEON DISC</h1>
+                <div class="settings-panel">
+                    <span class="settings-label">Max FPS:</span>
+                    <select id="fps-select">
+                        <option value="30">30</option>
+                        <option value="60" selected>60</option>
+                        <option value="120">120</option>
+                        <option value="0">Ilimitado</option>
+                    </select>
+                </div>
+            </div>
+            
+            <!-- Contenedor con scroll para evitar overlap -->
+            <div class="level-grid-container">
+                <div class="level-grid" id="grid-container"></div>
+            </div>
+        </div>
+
+        <!-- HUD -->
+        <div id="hud-container">
+            <div id="level-display">Nivel 1</div>
+            <div id="controls-hint">Toque Izq/Der para girar</div>
+        </div>
+
+        <!-- MODALS -->
+        <div id="game-over" class="modal-screen hidden">
+            <h1 style="color: #ff4444; margin:0; font-size: 40px;">FAIL</h1>
+            <p id="fail-reason" style="color:#ccc; margin:0;">Has caído</p>
+            <button class="action-btn" onclick="restartLevel()">Reintentar</button>
+            <button class="action-btn" style="background: transparent; border:1px solid #444; color:#888; font-size:14px; padding:10px;" onclick="showMenu()">Menú</button>
+        </div>
+
+        <div id="level-complete" class="modal-screen win-style hidden">
+            <h1 style="color: #00ff00; margin:0; font-size: 40px;">¡META!</h1>
+            <button class="action-btn" onclick="nextLevel()">Siguiente</button>
+            <button class="action-btn" style="background: transparent; border:1px solid #444; color:#888; font-size:14px; padding:10px;" onclick="showMenu()">Menú</button>
+        </div>
+    </div>
+
+    <script>
+        // --- URL SKYBOX ---
+        const skyboxUrl = 'https://upload.wikimedia.org/wikipedia/commons/c/c2/Cignus_Wall_2048x1024.jpg'; 
+
+        // --- DEFINICIONES ---
+        const _ = {
+            S: (len) => ({ t:'S', len }),
+            T: (dir, f, len) => ({ t:'T', dir, f, len }), 
+            V: (slope, len) => ({ t:'V', s:slope, len })
+        };
+
+        const LEVELS = [
+            { id:1, name:"Paseo Espacial", diff:"Easy", color:"00aaff", data: [_.S(80), _.T(-1, 0.3, 60), _.S(60), _.T(1, 0.3, 60), _.S(100)] },
+            { id:2, name:"Autopista", diff:"Easy", color:"ff00aa", data: [_.S(60), _.T(1, 0.5, 80), _.S(40), _.T(-1, 0.5, 80), _.S(120)] },
+            { id:3, name:"Ascensión", diff:"Easy", color:"4444ff", data: [_.S(40), _.V(0.2, 100), _.S(40), _.T(-1, 0.5, 60), _.V(0.2, 100), _.S(80)] },
+            { id:4, name:"Colores", diff:"Medium", color:"00ff00", data: [_.S(40), _.T(1, 0.8, 40), _.T(-1, 0.8, 40), _.T(1, 0.8, 40), _.T(-1, 0.8, 40), _.S(80)] },
+            { id:5, name:"Velocidad", diff:"Medium", color:"ffaa00", data: [_.S(150), _.T(-1, 0.2, 100), _.S(200)] },
+            { id:6, name:"Circuito", diff:"Medium", color:"aa00ff", data: [_.S(40), _.V(0.1, 80), _.S(40), _.V(-0.1, 80), _.S(80)] },
+            { id:7, name:"Caída Libre", diff:"Hard", color:"ff0000", data: [_.S(40), _.V(-0.3, 150), _.S(80), _.T(1, 0.4, 80), _.S(100)] },
+            { id:8, name:"Templo", diff:"Hard", color:"008888", data: [_.S(60), _.T(1, 1.0, 30), _.T(-1, 1.0, 30), _.T(1, 1.0, 30), _.T(-1, 1.0, 30), _.S(100)] },
+            { id:9, name:"Neo Tokyo", diff:"Hard", color:"ffffff", data: [_.S(40), _.T(1, 1.0, 80), _.S(20), _.T(-1, 1.0, 80), _.S(60)] },
+            { id:10, name:"Colinas", diff:"Insane", color:"550055", data: [_.V(0.3, 60), _.V(-0.3, 60), _.T(1, 0.8, 60), _.V(0.3, 60), _.V(-0.3, 60), _.S(80)] },
+            { id:11, name:"Gearbox", diff:"Insane", color:"888888", data: [_.S(40), _.T(1, 0.5, 300), _.S(80)] },
+            { id:12, name:"Tejados", diff:"Insane", color:"ff5500", data: [_.S(40), _.T(-1, 1.2, 80), _.S(40), _.T(1, 1.2, 80), _.S(80)] },
+            { id:13, name:"Piscina", diff:"Expert", color:"0000ff", data: [_.S(40), _.T(1, 1.5, 40), _.V(-0.2, 120), _.T(-1, 1.5, 40), _.S(80)] },
+            { id:14, name:"Parque", diff:"Expert", color:"00ffaa", data: [_.S(40), _.T(-1, 1.8, 40), _.T(1, 1.8, 40), _.V(0.4, 60), _.T(-1, 1.5, 80), _.S(120)] },
+            { id:15, name:"El Muro", diff:"Expert", color:"333333", data: [_.S(40), _.V(-0.4, 100), _.T(1, 1.5, 60), _.V(0.4, 100), _.T(-1, 1.5, 60), _.S(150)] }
+        ];
+
+        const CONFIG = {
+            speed: 90.0,
+            turnSpeed: 4.0,
+            gravity: 180.0,
+            pathWidth: 30,
+            cameraDist: 22,     
+            cameraHeight: 14    
+        };
+
+        let scene, camera, renderer, clock;
+        let player, discMesh;
+        let pathSegments = [], obstacles = [], particles = [];
+        let isGameActive = false;
+        let currentLevel = 0;
+        let playerVelY = 0;
+        let input = { l: false, r: false };
+        const raycaster = new THREE.Raycaster();
+        const downVec = new THREE.Vector3(0, -1, 0);
+
+        // Variables FPS
+        let maxFPS = 60; // Valor por defecto
+        let lastFrameTime = 0;
+
+        const textureLoader = new THREE.TextureLoader();
+        textureLoader.crossOrigin = "Anonymous";
+        const floorTexture = textureLoader.load('https://logise1.github.io/firedodo/assets/floor.png');
+        const playerTexture = textureLoader.load('https://logise1.github.io/firedodo/assets/player.png');
+        
+        floorTexture.wrapS = THREE.RepeatWrapping;
+        floorTexture.wrapT = THREE.RepeatWrapping;
+        floorTexture.repeat.set(1, 1);
+
+        const cubeLoader = new THREE.CubeTextureLoader();
+        const skyboxTexture = cubeLoader.load([
+            'https://logise1.github.io/firedodo/assets/skybox/right.png',
+            'https://logise1.github.io/firedodo/assets/skybox/left.png',
+            'https://logise1.github.io/firedodo/assets/skybox/top.png',
+            'https://logise1.github.io/firedodo/assets/skybox/bottom.png',
+            'https://logise1.github.io/firedodo/assets/skybox/front.png',
+            'https://logise1.github.io/firedodo/assets/skybox/back.png'
+        ]);
+
+        function init() {
+            clock = new THREE.Clock();
+            scene = new THREE.Scene();
+            
+            scene.background = skyboxTexture;
+            scene.fog = new THREE.FogExp2(0x000000, 0.001);
+
+            camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 2000);
+            renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: "high-performance" });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.shadowMap.enabled = true;
+            renderer.outputEncoding = THREE.sRGBEncoding;
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+            document.body.appendChild(renderer.domElement);
+
+            scene.add(new THREE.AmbientLight(0xffffff, 0.5));
+            const dl = new THREE.DirectionalLight(0xffffff, 1.0);
+            dl.position.set(50, 100, 50);
+            dl.castShadow = true;
+            dl.shadow.mapSize.set(2048, 2048);
+            scene.add(dl);
+
+            player = new THREE.Object3D();
+            scene.add(player);
+
+            const pGeo = new THREE.BoxGeometry(3, 1, 3);
+            const pMat = new THREE.MeshStandardMaterial({ 
+                map: playerTexture, transparent: true, opacity: 1.0,
+                roughness: 0.1, metalness: 0.8, side: THREE.DoubleSide
+            });
+            discMesh = new THREE.Mesh(pGeo, pMat);
+            discMesh.position.y = 0.5;
+            discMesh.castShadow = true;
+            player.add(discMesh);
+
+            setupInputs();
+            createLevelMenu(); 
+            
+            // Configurar selector FPS
+            const fpsSelect = document.getElementById('fps-select');
+            fpsSelect.addEventListener('change', (e) => {
+                maxFPS = parseInt(e.target.value);
+            });
+
+            requestAnimationFrame(animate);
+        }
+
+        function createLevelMenu() {
+            const grid = document.getElementById('grid-container');
+            grid.innerHTML = ''; 
+            LEVELS.forEach((lvl, index) => {
+                const card = document.createElement('div');
+                card.className = 'level-card';
+                card.onclick = () => startLevel(index);
+                const img = document.createElement('img');
+                img.className = 'card-image';
+                img.src = `https://placehold.co/400x250/${lvl.color}/000000?text=${encodeURIComponent(lvl.name)}`;
+                const badge = document.createElement('div');
+                badge.className = `card-badge diff-${lvl.diff}`;
+                badge.innerText = lvl.diff;
+                const title = document.createElement('div');
+                title.className = 'card-title-overlay';
+                title.innerText = lvl.name;
+                const grad = document.createElement('div');
+                grad.className = 'card-gradient';
+                card.appendChild(img); card.appendChild(grad); card.appendChild(title); card.appendChild(badge);
+                grid.appendChild(card);
+            });
+        }
+
+        function showMenu() {
+            isGameActive = false;
+            document.querySelectorAll('.modal-screen').forEach(e => e.classList.add('hidden'));
+            document.getElementById('hud-container').style.display = 'none';
+            document.getElementById('ui-layer').style.background = "rgba(15, 15, 20, 0.85)";
+            document.getElementById('level-selector').classList.remove('hidden');
+        }
+
+        function spawnParticle() {
+            const geo = new THREE.BoxGeometry(0.4, 0.4, 0.4);
+            const mat = new THREE.MeshBasicMaterial({ color: 0x00ffff, transparent: true, opacity: 0.8 });
+            const p = new THREE.Mesh(geo, mat);
+            p.position.copy(player.position);
+            p.position.x += (Math.random() - 0.5) * 2;
+            p.position.y += (Math.random() * 1); 
+            p.position.z += (Math.random() * 2) + 1; 
+            scene.add(p);
+            particles.push({ mesh: p, life: 1.0 });
+        }
+
+        function updateParticles(dt) {
+            for (let i = particles.length - 1; i >= 0; i--) {
+                const p = particles[i];
+                p.life -= dt * 2.0; 
+                p.mesh.position.z += dt * 20;
+                p.mesh.scale.setScalar(p.life);
+                p.mesh.material.opacity = p.life;
+                p.mesh.rotation.x += dt * 5;
+                if (p.life <= 0) {
+                    scene.remove(p.mesh);
+                    p.mesh.geometry.dispose();
+                    p.mesh.material.dispose();
+                    particles.splice(i, 1);
+                }
+            }
+        }
+
+        function generateLevel(idx) {
+            pathSegments.forEach(m => scene.remove(m));
+            obstacles.forEach(m => scene.remove(m));
+            pathSegments = []; obstacles = [];
+            particles.forEach(p => scene.remove(p.mesh));
+            particles = [];
+
+            const level = LEVELS[idx];
+            document.getElementById('level-display').innerText = `${level.id}. ${level.name}`;
+
+            const matFloor = new THREE.MeshStandardMaterial({ map: floorTexture, roughness: 0.4 });
+            const matFinish = new THREE.MeshStandardMaterial({ color: 0x00ff00, emissive: 0x005500 });
+            const matObs = new THREE.MeshStandardMaterial({ color: 0xff0000, emissive: 0xaa0000 });
+
+            let cursor = { pos: new THREE.Vector3(0, 0, 30), yaw: 0, pitch: 0 };
+
+            const addSegment = (len, dYaw=0, dPitch=0, isFinish=false) => {
+                const hLen = Math.cos(cursor.pitch) * len; 
+                const vLen = Math.sin(cursor.pitch) * len; 
+                const dx = Math.sin(cursor.yaw) * hLen;
+                const dz = -Math.cos(cursor.yaw) * hLen;
+                const dy = vLen;
+
+                const endPos = new THREE.Vector3(cursor.pos.x + dx, cursor.pos.y + dy, cursor.pos.z + dz);
+                const midPos = new THREE.Vector3().addVectors(cursor.pos, endPos).multiplyScalar(0.5);
+                const finalLen = len + 0.5; 
+                const geo = new THREE.BoxGeometry(CONFIG.pathWidth, 1, finalLen);
+                const mesh = new THREE.Mesh(geo, isFinish ? matFinish : matFloor);
+                
+                mesh.position.copy(midPos);
+                mesh.lookAt(endPos);
+                mesh.receiveShadow = true;
+                if(isFinish) mesh.userData = { isFinish: true };
+                scene.add(mesh);
+                pathSegments.push(mesh);
+
+                const difficultyFactor = (currentLevel / 15); 
+                const obsChance = 0.03 + (difficultyFactor * 0.1); 
+                
+                if(!isFinish && Math.random() < obsChance) {
+                    const obs = new THREE.Mesh(new THREE.BoxGeometry(3,3,3), matObs);
+                    const offset = (Math.random()-0.5) * (CONFIG.pathWidth-8);
+                    const rightVec = new THREE.Vector3(1,0,0).applyQuaternion(mesh.quaternion);
+                    const upVec = new THREE.Vector3(0,1,0).applyQuaternion(mesh.quaternion);
+                    obs.position.copy(mesh.position);
+                    obs.position.add(upVec.multiplyScalar(2)); 
+                    obs.position.add(rightVec.multiplyScalar(offset));
+                    obs.rotation.copy(mesh.rotation);
+                    obs.castShadow = true;
+                    scene.add(obs);
+                    obstacles.push(obs);
+                }
+
+                cursor.pos.copy(endPos);
+                cursor.yaw += dYaw;
+                cursor.pitch += dPitch;
+            };
+
+            addSegment(60, 0, 0);
+            level.data.forEach(item => {
+                const BASE_SEGMENT_LEN = 5; 
+                if(item.t === 'S') { 
+                    const blocks = Math.ceil(item.len / BASE_SEGMENT_LEN);
+                    for(let i=0; i<blocks; i++) addSegment(BASE_SEGMENT_LEN, 0, 0);
+                }
+                else if(item.t === 'T') { 
+                    const count = Math.ceil((item.len * 5) / BASE_SEGMENT_LEN); 
+                    const angleStep = (item.dir * item.f) / count;
+                    for(let i=0; i<count; i++) addSegment(BASE_SEGMENT_LEN, angleStep, 0);
+                }
+                else if(item.t === 'V') { 
+                    const count = Math.ceil((item.len * 5) / BASE_SEGMENT_LEN);
+                    const targetPitch = item.s; 
+                    cursor.pitch = targetPitch; 
+                    for(let i=0; i<count; i++) addSegment(BASE_SEGMENT_LEN, 0, 0);
+                    cursor.pitch = 0; 
+                }
+            });
+            addSegment(30, 0, 0, true);
+        }
+
+        function startLevel(idx) {
+            currentLevel = idx;
+            try { document.documentElement.requestFullscreen().catch(()=>{}); } catch(e){}
+            document.getElementById('ui-layer').style.background = "none";
+            document.getElementById('level-selector').classList.add('hidden');
+            document.getElementById('game-over').classList.add('hidden');
+            document.getElementById('level-complete').classList.add('hidden');
+            document.getElementById('hud-container').style.display = 'block';
+            player.position.set(0, 0, 0);
+            player.rotation.set(0, 0, 0);
+            discMesh.rotation.set(0,0,0);
+            playerVelY = 0;
+            generateLevel(idx);
+            isGameActive = true;
+            clock.start();
+        }
+
+        function restartLevel() { startLevel(currentLevel); }
+        function nextLevel() { 
+            if(currentLevel < LEVELS.length - 1) startLevel(currentLevel + 1);
+            else showMenu();
+        }
+
+        function setupInputs() {
+            const l = document.getElementById('left-zone');
+            const r = document.getElementById('right-zone');
+            const handle = (k, v) => { input[k] = v; };
+            l.addEventListener('touchstart', (e)=>{e.preventDefault(); handle('l',true);});
+            l.addEventListener('touchend', (e)=>{e.preventDefault(); handle('l',false);});
+            r.addEventListener('touchstart', (e)=>{e.preventDefault(); handle('r',true);});
+            r.addEventListener('touchend', (e)=>{e.preventDefault(); handle('r',false);});
+            l.addEventListener('mousedown', ()=>handle('l',true));
+            l.addEventListener('mouseup', ()=>handle('l',false));
+            r.addEventListener('mousedown', ()=>handle('r',true));
+            r.addEventListener('mouseup', ()=>handle('r',false));
+            window.addEventListener('keydown', (e) => {
+                const k = e.key.toLowerCase();
+                if(k === 'arrowleft' || k === 'a') handle('l', true);
+                if(k === 'arrowright' || k === 'd') handle('r', true);
+            });
+            window.addEventListener('keyup', (e) => {
+                const k = e.key.toLowerCase();
+                if(k === 'arrowleft' || k === 'a') handle('l', false);
+                if(k === 'arrowright' || k === 'd') handle('r', false);
+            });
+        }
+
+        function animate(timestamp) {
+            requestAnimationFrame(animate);
+
+            // Lógica para limitar FPS
+            if (maxFPS !== 0) {
+                const frameInterval = 1000 / maxFPS;
+                const elapsed = timestamp - lastFrameTime;
+                if (elapsed < frameInterval) return;
+                lastFrameTime = timestamp - (elapsed % frameInterval);
+            }
+
+            const dt = Math.min(clock.getDelta(), 0.1);
+
+            if(isGameActive) {
+                const turn = CONFIG.turnSpeed * dt;
+                if(input.l) player.rotation.y += turn;
+                if(input.r) player.rotation.y -= turn;
+
+                player.translateZ(-CONFIG.speed * dt);
+                playerVelY -= CONFIG.gravity * dt;
+                player.position.y += playerVelY * dt;
+
+                const rayPos = player.position.clone();
+                rayPos.y += 10; 
+                raycaster.set(rayPos, downVec);
+                const hits = raycaster.intersectObjects(pathSegments);
+
+                if(hits.length > 0) {
+                    const hit = hits[0];
+                    const distToFloor = hit.distance - 10; 
+                    if(distToFloor < 5 && distToFloor > -5) { 
+                        player.position.y = hit.point.y;
+                        playerVelY = 0;
+                        if(hit.object.userData.isFinish) {
+                            isGameActive = false;
+                            document.getElementById('level-complete').classList.remove('hidden');
+                        }
+                    }
+                }
+
+                if(player.position.y < -500) {
+                    isGameActive = false;
+                    document.getElementById('fail-reason').innerText = "Caída al vacío";
+                    document.getElementById('game-over').classList.remove('hidden');
+                }
+
+                discMesh.rotation.y += 10.0 * dt; 
+                spawnParticle();
+                
+                for(let o of obstacles) {
+                    if(player.position.distanceToSquared(o.position) < 15) {
+                        isGameActive = false;
+                        document.getElementById('fail-reason').innerText = "¡Choque!";
+                        document.getElementById('game-over').classList.remove('hidden');
+                    }
+                }
+            }
+            
+            updateParticles(dt);
+
+            if(player) {
+                const camOff = new THREE.Vector3(0, CONFIG.cameraHeight, CONFIG.cameraDist);
+                camOff.applyAxisAngle(new THREE.Vector3(0,1,0), player.rotation.y);
+                const target = player.position.clone().add(camOff);
+                const lerp = 1 - Math.exp(-25 * dt); 
+                camera.position.lerp(target, lerp);
+                
+                const lookTarget = player.position.clone().add(
+                    new THREE.Vector3(0,0,-20).applyAxisAngle(new THREE.Vector3(0,1,0), player.rotation.y)
+                );
+                camera.lookAt(lookTarget);
+            }
+
+            renderer.render(scene, camera);
+        }
+
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth/window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+        init();
+    </script>
+</body>
+</html>
