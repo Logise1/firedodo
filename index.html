@@ -34,7 +34,7 @@
             pointer-events: auto;
             display: flex; flex-direction: column; align-items: center;
             box-sizing: border-box;
-            padding-top: 20px; /* Espacio arriba para el título */
+            padding-top: 20px;
         }
 
         .selector-header { 
@@ -61,26 +61,29 @@
             cursor: pointer; outline: none;
         }
 
+        /* Contenedor con Scroll */
         .level-grid-container {
             flex: 1; width: 100%; overflow-y: auto; 
-            padding: 10px 20px 40px 20px; /* Padding desktop default */
+            padding: 10px 20px 60px 20px;
             box-sizing: border-box; display: flex; justify-content: center;
             -webkit-overflow-scrolling: touch;
         }
 
+        /* GRID DE NIVELES */
         .level-grid {
             display: grid; 
-            /* Default Desktop: Min 200px */
-            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
             gap: 20px; width: 100%; max-width: 1200px;
-            padding-bottom: 50px; /* Espacio extra final */
+            row-gap: 25px; 
         }
 
         .level-card {
             background: #050505; border-radius: 12px; overflow: hidden; cursor: pointer;
             transition: transform 0.2s, border-color 0.2s, box-shadow 0.2s; 
             display: flex; flex-direction: column; position: relative; 
-            border: 1px solid #333; aspect-ratio: 16 / 9;
+            border: 1px solid #333; 
+            aspect-ratio: 16 / 9;
+            min-height: 130px;
             box-shadow: 0 4px 15px rgba(0,0,0,0.6);
         }
         .level-card:hover { 
@@ -114,28 +117,17 @@
             background: linear-gradient(to top, rgba(0,0,0,0.95), transparent); pointer-events: none;
         }
 
-        /* --- MEDIA QUERY PARA MÓVILES (La Magia) --- */
+        /* --- AJUSTES PARA MÓVIL --- */
         @media (max-width: 600px) {
-            .level-grid-container {
-                padding: 10px; /* Menos padding lateral */
-            }
+            .level-grid-container { padding: 10px 15px 80px 15px; }
             .level-grid {
-                /* Tarjetas más pequeñas para que quepan 2 columnas */
-                grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); 
-                gap: 10px; /* Menos hueco entre tarjetas */
+                grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); 
+                gap: 15px; row-gap: 20px;
             }
-            .selector-header h1 {
-                font-size: 28px; /* Título más pequeño */
-            }
-            .card-title-overlay {
-                font-size: 12px; /* Texto tarjeta más pequeño */
-                bottom: 6px; left: 6px;
-            }
-            .card-badge {
-                font-size: 9px;
-                padding: 2px 4px;
-                bottom: 6px; right: 6px;
-            }
+            .level-card { aspect-ratio: 4 / 3; min-height: 120px; }
+            .selector-header h1 { font-size: 32px; }
+            .card-title-overlay { font-size: 13px; bottom: 8px; left: 8px; }
+            .card-badge { font-size: 10px; padding: 2px 5px; bottom: 8px; right: 8px; }
         }
 
         /* --- HUD & MODALES --- */
@@ -249,7 +241,7 @@
             V: (slope, len) => ({ t:'V', s:slope, len })
         };
 
-        // --- NIVELES (30 Total) ---
+        // --- NIVELES ---
         const LEVELS = [
             // 1-5: Tutorial / Easy
             { id:1, name:"Space Walk", diff:"Easy", theme: { floor:0xaaaaaa, fog:0x000010, obs:0x00ffff, shape:'box', filter:'#00ffff' }, data: [_.S(80), _.T(-1, 0.3, 60), _.S(60), _.T(1, 0.3, 60), _.S(100)] },
@@ -272,35 +264,37 @@
             { id:14, name:"Matrix", diff:"Expert", theme: { floor:0x000000, fog:0x002200, obs:0x00ff00, shape:'box', filter:'#00ff00' }, data: [_.S(40), _.T(-1, 1.8, 40), _.T(1, 1.8, 40), _.V(0.4, 60), _.T(-1, 1.5, 80), _.S(120)] },
             { id:15, name:"The End", diff:"Expert", theme: { floor:0x222222, fog:0x111111, obs:0xffffff, shape:'cylinder', filter:'#aaaaaa' }, data: [_.S(40), _.V(-0.4, 100), _.T(1, 1.5, 60), _.V(0.4, 100), _.T(-1, 1.5, 60), _.S(150)] },
             
-            // 16-20: Reajustados a HARD (antes Master)
+            // 16-20: HARD (Reajustados)
             { id:16, name:"Nebula", diff:"Hard", theme: { floor:0x220022, fog:0x110033, obs:0x00ffff, shape:'box', filter:'#ff00ff' }, data: [_.S(60), _.T(1, 2.0, 40), _.V(0.5, 80), _.T(-1, 2.0, 40), _.S(80)] },
             { id:17, name:"Asteroid", diff:"Hard", theme: { floor:0x443322, fog:0x111111, obs:0x888888, shape:'cone', filter:'#aa5500' }, data: [_.V(-0.5, 100), _.T(1, 1.0, 20), _.T(-1, 1.0, 20), _.T(1, 1.0, 20), _.S(100)] },
             { id:18, name:"Cyberpunk", diff:"Hard", theme: { floor:0x001122, fog:0x000022, obs:0xffff00, shape:'box', filter:'#ffff00' }, data: [_.S(40), _.T(1, 2.5, 40), _.V(-0.2, 50), _.T(-1, 2.5, 40), _.S(60)] },
             { id:19, name:"Black Hole", diff:"Hard", theme: { floor:0x111111, fog:0x050505, obs:0x5500aa, shape:'cylinder', filter:'#5500aa' }, data: [_.S(40), _.T(-1, 3.0, 20), _.T(1, 3.0, 20), _.V(0.6, 80), _.S(80)] },
             { id:20, name:"Horizon", diff:"Hard", theme: { floor:0xffffff, fog:0xffeecc, obs:0xffaa00, shape:'box', filter:'#ffaa00' }, data: [_.S(200), _.V(0.1, 200), _.S(200)] },
 
-            // 21-25: Nuevos INSANE / EXPERT (Más largos)
-            { id:21, name:"Magma Core", diff:"Insane", theme: { floor:0x330000, fog:0x1a0000, obs:0xff4400, shape:'cone', filter:'#ff4400' }, data: [_.S(50), _.V(-0.6, 150), _.T(1, 2.0, 50), _.T(-1, 2.0, 50), _.S(100)] },
+            // 21-25: INSANE / EXPERT (MAGMA CORE NERFEADO)
+            { id:21, name:"Magma Core", diff:"Insane", theme: { floor:0x330000, fog:0x1a0000, obs:0xff4400, shape:'cone', filter:'#ff4400' }, 
+              data: [_.S(50), _.V(-0.4, 80), _.S(20), _.V(-0.4, 80), _.T(1, 1.5, 50), _.T(-1, 1.5, 50), _.S(100)] }, // Pendiente suavizada a -0.4 y partida en dos
             { id:22, name:"Serpent", diff:"Insane", theme: { floor:0x003300, fog:0x001100, obs:0x00ff44, shape:'cylinder', filter:'#00ff44' }, data: [_.S(40), _.T(1, 1.0, 20), _.T(-1, 1.0, 20), _.T(1, 1.0, 20), _.T(-1, 1.0, 20), _.T(1, 1.0, 20), _.T(-1, 1.0, 20), _.S(80)] },
             { id:23, name:"Sky High", diff:"Expert", theme: { floor:0xeeffff, fog:0xccffff, obs:0x0088ff, shape:'box', filter:'#00aaff' }, data: [_.V(0.5, 200), _.S(20), _.T(1, 2.5, 40), _.V(-0.5, 200), _.S(50)] },
             { id:24, name:"Nightmare", diff:"Expert", theme: { floor:0x110011, fog:0x050005, obs:0xff0000, shape:'cone', filter:'#550000' }, data: [_.S(40), _.T(1, 3.0, 30), _.T(-1, 3.0, 30), _.V(-0.3, 100), _.T(1, 2.5, 50), _.S(120)] },
             { id:25, name:"Quantum", diff:"Master", theme: { floor:0x222233, fog:0x000011, obs:0xffffff, shape:'box', filter:'#ffffff' }, data: [_.S(60), _.V(0.4, 100), _.T(-1, 3.0, 40), _.V(-0.4, 100), _.T(1, 3.0, 40), _.S(200)] },
 
-            // 26-30: Nuevos GODLIKE (Extremos y Largos)
+            // 26-30: GODLIKE
             { id:26, name:"Omega", diff:"Godlike", theme: { floor:0x000000, fog:0x000000, obs:0xff00ff, shape:'cylinder', filter:'#ff00ff' }, data: [_.S(100), _.T(1, 1.0, 200), _.T(-1, 1.0, 200), _.S(150)] },
-            { id:27, name:"Inferno", diff:"Godlike", theme: { floor:0x440000, fog:0x220000, obs:0xffaa00, shape:'cone', filter:'#ff2200' }, data: [_.V(-0.7, 200), _.T(1, 3.5, 30), _.V(0.7, 200), _.T(-1, 3.5, 30), _.S(100)] },
+            { id:27, name:"Inferno", diff:"Godlike", theme: { floor:0x440000, fog:0x220000, obs:0xffaa00, shape:'cone', filter:'#ff2200' }, data: [_.V(-0.6, 150), _.T(1, 3.5, 30), _.V(0.6, 150), _.T(-1, 3.5, 30), _.S(100)] },
             { id:28, name:"Zenith", diff:"Godlike", theme: { floor:0xffffee, fog:0xffffff, obs:0x444444, shape:'box', filter:'#ffffaa' }, data: [_.S(50), _.T(1, 2.0, 30), _.T(-1, 2.0, 30), _.V(0.2, 300), _.S(50)] },
-            { id:29, name:"Abyss", diff:"Godlike", theme: { floor:0x050505, fog:0x020202, obs:0x333333, shape:'box', filter:'#111111' }, data: [_.S(50), _.V(-0.8, 300), _.T(1, 4.0, 40), _.S(200)] },
+            { id:29, name:"Abyss", diff:"Godlike", theme: { floor:0x050505, fog:0x020202, obs:0x333333, shape:'box', filter:'#111111' }, data: [_.S(50), _.V(-0.7, 250), _.T(1, 4.0, 40), _.S(200)] },
             { id:30, name:"Firedodo", diff:"Godlike", theme: { floor:0xff4400, fog:0x220000, obs:0xffff00, shape:'cylinder', filter:'#ff4400' }, data: [_.S(100), _.T(-1, 2.0, 50), _.V(0.5, 100), _.T(1, 2.0, 50), _.V(-0.5, 100), _.T(-1, 3.0, 50), _.S(300)] }
         ];
 
+        // --- CONFIGURACIÓN ---
         const CONFIG = {
             speed: 90.0,
-            turnSpeed: 4.0,     // Solicitado 4.0
+            turnSpeed: 4.0,
             gravity: 180.0,
             pathWidth: 30,
-            cameraDist: 22,     
-            cameraHeight: 14    
+            cameraDist: 24,     // Cámara más alejada (antes 22)
+            cameraHeight: 18    // Cámara más alta para ver bajadas (antes 14)
         };
 
         let scene, camera, renderer, clock;
@@ -315,7 +309,7 @@
 
         let maxFPS = 60; 
         let lastFrameTime = 0;
-        let fadeInterval; // Para controlar el fade out
+        let fadeInterval; 
 
         // --- AUDIO ---
         const bgm = new Audio('bgm.mp3');
@@ -390,11 +384,9 @@
             requestAnimationFrame(animate);
         }
 
-        // --- CORRECCIÓN DE AUDIO ---
         function playMusic() {
-            // Detener cualquier fade out activo para que no baje el volumen de la nueva música
             clearInterval(fadeInterval);
-            bgm.volume = 0.6; // Restaurar volumen
+            bgm.volume = 0.6; 
             bgm.currentTime = 0;
             bgm.play().catch(e => console.log("Audio autoplay blocked"));
         }
@@ -407,7 +399,7 @@
         }
 
         function fadeOutMusic() {
-            clearInterval(fadeInterval); // Limpiar por si acaso
+            clearInterval(fadeInterval); 
             let vol = bgm.volume;
             fadeInterval = setInterval(() => {
                 if (vol > 0.05) {
@@ -501,7 +493,6 @@
 
             document.getElementById('level-display').innerText = `${level.id}. ${level.name}`;
 
-            // APLICAR TEMA Y FILTROS
             scene.fog.color.setHex(theme.fog);
             document.getElementById('color-overlay').style.backgroundColor = theme.filter;
             
@@ -535,8 +526,8 @@
                 scene.add(mesh);
                 pathSegments.push(mesh);
 
-                // Probabilidad obstáculos
-                const obsChance = 0.03 + (currentLevel * 0.002); // Muy pocos pero aumentan levemente
+                const difficultyFactor = (currentLevel / 20); 
+                const obsChance = 0.03 + (difficultyFactor * 0.1); 
                 
                 if(!isFinish && Math.random() < obsChance) {
                     let obsGeo;
@@ -605,7 +596,6 @@
         }
 
         function restartLevel() { 
-            // IMPORTANTE: Parar música completamente antes de reiniciar para evitar problemas con el fade
             stopMusic(); 
             startLevel(currentLevel); 
         }
@@ -660,15 +650,17 @@
                 playerVelY -= CONFIG.gravity * dt;
                 player.position.y += playerVelY * dt;
 
+                // RAYCAST DESDE ARRIBA (VISIBILIDAD BAJADAS ARREGLADA)
                 const rayPos = player.position.clone();
-                rayPos.y += 10; 
+                rayPos.y += 20; // Rayo desde muy arriba para detectar suelo en bajadas fuertes
                 raycaster.set(rayPos, downVec);
                 const hits = raycaster.intersectObjects(pathSegments);
 
                 if(hits.length > 0) {
                     const hit = hits[0];
-                    const distToFloor = hit.distance - 10; 
-                    if(distToFloor < 5 && distToFloor > -5) { 
+                    const distToFloor = hit.distance - 20; 
+                    // Margen amplio para "pegar" al jugador en bajadas (-8 a 5)
+                    if(distToFloor < 5 && distToFloor > -8) { 
                         player.position.y = hit.point.y;
                         playerVelY = 0;
                         if(hit.object.userData.isFinish) {
@@ -708,8 +700,9 @@
                 const lerp = 1 - Math.exp(-25 * dt); 
                 camera.position.lerp(target, lerp);
                 
+                // LOOKAT ADELANTADO PARA VER BAJADAS
                 const lookTarget = player.position.clone().add(
-                    new THREE.Vector3(0,0,-20).applyAxisAngle(new THREE.Vector3(0,1,0), player.rotation.y)
+                    new THREE.Vector3(0,0,-30).applyAxisAngle(new THREE.Vector3(0,1,0), player.rotation.y)
                 );
                 camera.lookAt(lookTarget);
             }
