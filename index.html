@@ -14,8 +14,19 @@
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
             z-index: 100; pointer-events: none;
             display: flex; flex-direction: column; justify-content: center; align-items: center;
-            background: rgba(15, 15, 20, 0.85);
-            transition: background 0.5s; /* Transición suave de color de fondo */
+            /* Fondo base del menú (sin blur) */
+            background: rgba(10, 10, 15, 0.95);
+            transition: background-color 0.5s ease;
+        }
+
+        /* Capa de tinte de color para el juego */
+        #color-overlay {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            z-index: 90; pointer-events: none;
+            mix-blend-mode: overlay; /* Mezcla con el 3D para tintar */
+            opacity: 0.2; /* Sutileza del filtro */
+            background: transparent;
+            transition: background-color 1s;
         }
 
         /* --- SELECTOR DE NIVELES --- */
@@ -85,6 +96,7 @@
         .diff-Hard { color: #ff0000; border-color: #ff0000; }
         .diff-Insane { color: #aa00ff; border-color: #aa00ff; }
         .diff-Expert { color: #00ffff; border-color: #00ffff; }
+        .diff-Master { color: #ff00ff; border-color: #ff00ff; } /* Nuevo rango para niveles extra */
 
         .card-title-overlay {
             position: absolute; bottom: 10px; left: 10px; color: #fff; font-size: 16px; font-weight: 800;
@@ -155,6 +167,9 @@
     <div id="left-zone" class="control-zone"></div>
     <div id="right-zone" class="control-zone"></div>
 
+    <!-- OVERLAY DE COLOR PARA EL JUEGO -->
+    <div id="color-overlay"></div>
+
     <div id="ui-layer">
         <!-- MENU -->
         <div id="level-selector">
@@ -207,32 +222,34 @@
         };
 
         // --- CONFIGURACIÓN DE TEMAS VISUALES ---
-        // floorTint: Color para teñir el suelo
-        // fogColor: Color de la niebla (fondo)
-        // obsColor: Color de los obstáculos
-        // obsShape: 'box' (cubo), 'cone' (cono), 'cylinder' (columna)
-        
+        // floorTint: Color suelo, fogColor: Fondo, obsColor: Obstáculos, filter: Color del filtro de pantalla (CSS)
         const LEVELS = [
-            { id:1, name:"Space Walk", diff:"Easy", theme: { floor:0xaaaaaa, fog:0x000010, obs:0x00ffff, shape:'box' }, data: [_.S(80), _.T(-1, 0.3, 60), _.S(60), _.T(1, 0.3, 60), _.S(100)] },
-            { id:2, name:"Candy Land", diff:"Easy", theme: { floor:0xffdddd, fog:0x330011, obs:0xff00aa, shape:'cylinder' }, data: [_.S(60), _.T(1, 0.5, 80), _.S(40), _.T(-1, 0.5, 80), _.S(120)] },
-            { id:3, name:"Toxic Waste", diff:"Easy", theme: { floor:0xddffdd, fog:0x002200, obs:0x00ff00, shape:'box' }, data: [_.S(40), _.V(0.2, 100), _.S(40), _.T(-1, 0.5, 60), _.V(0.2, 100), _.S(80)] },
-            { id:4, name:"Solar", diff:"Medium", theme: { floor:0xffffcc, fog:0x221100, obs:0xffaa00, shape:'cone' }, data: [_.S(40), _.T(1, 0.8, 40), _.T(-1, 0.8, 40), _.T(1, 0.8, 40), _.T(-1, 0.8, 40), _.S(80)] },
-            { id:5, name:"Hyper Speed", diff:"Medium", theme: { floor:0xccccff, fog:0x000033, obs:0x4444ff, shape:'cylinder' }, data: [_.S(150), _.T(-1, 0.2, 100), _.S(200)] },
-            { id:6, name:"Deep Sea", diff:"Medium", theme: { floor:0xaaffff, fog:0x001122, obs:0x00aaaa, shape:'box' }, data: [_.S(40), _.V(0.1, 80), _.S(40), _.V(-0.1, 80), _.S(80)] },
-            { id:7, name:"Red Alert", diff:"Hard", theme: { floor:0xffaaaa, fog:0x330000, obs:0xff0000, shape:'cone' }, data: [_.S(40), _.V(-0.3, 150), _.S(80), _.T(1, 0.4, 80), _.S(100)] },
-            { id:8, name:"Jungle", diff:"Hard", theme: { floor:0xaaffaa, fog:0x002211, obs:0x008844, shape:'cylinder' }, data: [_.S(60), _.T(1, 1.0, 30), _.T(-1, 1.0, 30), _.T(1, 1.0, 30), _.T(-1, 1.0, 30), _.S(100)] },
-            { id:9, name:"Whiteout", diff:"Hard", theme: { floor:0xffffff, fog:0x888888, obs:0x222222, shape:'box' }, data: [_.S(40), _.T(1, 1.0, 80), _.S(20), _.T(-1, 1.0, 80), _.S(60)] },
-            { id:10, name:"Void", diff:"Insane", theme: { floor:0x666666, fog:0x000000, obs:0xaa00ff, shape:'cone' }, data: [_.V(0.3, 60), _.V(-0.3, 60), _.T(1, 0.8, 60), _.V(0.3, 60), _.V(-0.3, 60), _.S(80)] },
-            { id:11, name:"Rusty", diff:"Insane", theme: { floor:0xddbb99, fog:0x221105, obs:0x884400, shape:'cylinder' }, data: [_.S(40), _.T(1, 0.5, 300), _.S(80)] },
-            { id:12, name:"Neon Nights", diff:"Insane", theme: { floor:0x333333, fog:0x110022, obs:0xff00ff, shape:'box' }, data: [_.S(40), _.T(-1, 1.2, 80), _.S(40), _.T(1, 1.2, 80), _.S(80)] },
-            { id:13, name:"Glacier", diff:"Expert", theme: { floor:0xddeeff, fog:0x223344, obs:0x0088ff, shape:'cone' }, data: [_.S(40), _.T(1, 1.5, 40), _.V(-0.2, 120), _.T(-1, 1.5, 40), _.S(80)] },
-            { id:14, name:"Matrix", diff:"Expert", theme: { floor:0x000000, fog:0x002200, obs:0x00ff00, shape:'box' }, data: [_.S(40), _.T(-1, 1.8, 40), _.T(1, 1.8, 40), _.V(0.4, 60), _.T(-1, 1.5, 80), _.S(120)] },
-            { id:15, name:"The End", diff:"Expert", theme: { floor:0x222222, fog:0x111111, obs:0xffffff, shape:'cylinder' }, data: [_.S(40), _.V(-0.4, 100), _.T(1, 1.5, 60), _.V(0.4, 100), _.T(-1, 1.5, 60), _.S(150)] }
+            { id:1, name:"Space Walk", diff:"Easy", theme: { floor:0xaaaaaa, fog:0x000010, obs:0x00ffff, shape:'box', filter:'#00ffff' }, data: [_.S(80), _.T(-1, 0.3, 60), _.S(60), _.T(1, 0.3, 60), _.S(100)] },
+            { id:2, name:"Candy Land", diff:"Easy", theme: { floor:0xffdddd, fog:0x330011, obs:0xff00aa, shape:'cylinder', filter:'#ff00aa' }, data: [_.S(60), _.T(1, 0.5, 80), _.S(40), _.T(-1, 0.5, 80), _.S(120)] },
+            { id:3, name:"Toxic Waste", diff:"Easy", theme: { floor:0xddffdd, fog:0x002200, obs:0x00ff00, shape:'box', filter:'#00ff00' }, data: [_.S(40), _.V(0.2, 100), _.S(40), _.T(-1, 0.5, 60), _.V(0.2, 100), _.S(80)] },
+            { id:4, name:"Solar", diff:"Medium", theme: { floor:0xffffcc, fog:0x221100, obs:0xffaa00, shape:'cone', filter:'#ffaa00' }, data: [_.S(40), _.T(1, 0.8, 40), _.T(-1, 0.8, 40), _.T(1, 0.8, 40), _.T(-1, 0.8, 40), _.S(80)] },
+            { id:5, name:"Hyper Speed", diff:"Medium", theme: { floor:0xccccff, fog:0x000033, obs:0x4444ff, shape:'cylinder', filter:'#4444ff' }, data: [_.S(150), _.T(-1, 0.2, 100), _.S(200)] },
+            { id:6, name:"Deep Sea", diff:"Medium", theme: { floor:0xaaffff, fog:0x001122, obs:0x00aaaa, shape:'box', filter:'#00aaaa' }, data: [_.S(40), _.V(0.1, 80), _.S(40), _.V(-0.1, 80), _.S(80)] },
+            { id:7, name:"Red Alert", diff:"Hard", theme: { floor:0xffaaaa, fog:0x330000, obs:0xff0000, shape:'cone', filter:'#ff0000' }, data: [_.S(40), _.V(-0.3, 150), _.S(80), _.T(1, 0.4, 80), _.S(100)] },
+            { id:8, name:"Jungle", diff:"Hard", theme: { floor:0xaaffaa, fog:0x002211, obs:0x008844, shape:'cylinder', filter:'#00ff44' }, data: [_.S(60), _.T(1, 1.0, 30), _.T(-1, 1.0, 30), _.T(1, 1.0, 30), _.T(-1, 1.0, 30), _.S(100)] },
+            { id:9, name:"Whiteout", diff:"Hard", theme: { floor:0xffffff, fog:0x888888, obs:0x222222, shape:'box', filter:'#ffffff' }, data: [_.S(40), _.T(1, 1.0, 80), _.S(20), _.T(-1, 1.0, 80), _.S(60)] },
+            { id:10, name:"Void", diff:"Insane", theme: { floor:0x666666, fog:0x000000, obs:0xaa00ff, shape:'cone', filter:'#aa00ff' }, data: [_.V(0.3, 60), _.V(-0.3, 60), _.T(1, 0.8, 60), _.V(0.3, 60), _.V(-0.3, 60), _.S(80)] },
+            { id:11, name:"Rusty", diff:"Insane", theme: { floor:0xddbb99, fog:0x221105, obs:0x884400, shape:'cylinder', filter:'#ff8800' }, data: [_.S(40), _.T(1, 0.5, 300), _.S(80)] },
+            { id:12, name:"Neon Nights", diff:"Insane", theme: { floor:0x333333, fog:0x110022, obs:0xff00ff, shape:'box', filter:'#ff00ff' }, data: [_.S(40), _.T(-1, 1.2, 80), _.S(40), _.T(1, 1.2, 80), _.S(80)] },
+            { id:13, name:"Glacier", diff:"Expert", theme: { floor:0xddeeff, fog:0x223344, obs:0x0088ff, shape:'cone', filter:'#0088ff' }, data: [_.S(40), _.T(1, 1.5, 40), _.V(-0.2, 120), _.T(-1, 1.5, 40), _.S(80)] },
+            { id:14, name:"Matrix", diff:"Expert", theme: { floor:0x000000, fog:0x002200, obs:0x00ff00, shape:'box', filter:'#00ff00' }, data: [_.S(40), _.T(-1, 1.8, 40), _.T(1, 1.8, 40), _.V(0.4, 60), _.T(-1, 1.5, 80), _.S(120)] },
+            { id:15, name:"The End", diff:"Expert", theme: { floor:0x222222, fog:0x111111, obs:0xffffff, shape:'cylinder', filter:'#aaaaaa' }, data: [_.S(40), _.V(-0.4, 100), _.T(1, 1.5, 60), _.V(0.4, 100), _.T(-1, 1.5, 60), _.S(150)] },
+            // NUEVOS NIVELES EXTRA
+            { id:16, name:"Nebula", diff:"Master", theme: { floor:0x220022, fog:0x110033, obs:0x00ffff, shape:'box', filter:'#ff00ff' }, data: [_.S(60), _.T(1, 2.0, 40), _.V(0.5, 80), _.T(-1, 2.0, 40), _.S(80)] },
+            { id:17, name:"Asteroid", diff:"Master", theme: { floor:0x443322, fog:0x111111, obs:0x888888, shape:'cone', filter:'#aa5500' }, data: [_.V(-0.5, 100), _.T(1, 1.0, 20), _.T(-1, 1.0, 20), _.T(1, 1.0, 20), _.S(100)] },
+            { id:18, name:"Cyberpunk", diff:"Master", theme: { floor:0x001122, fog:0x000022, obs:0xffff00, shape:'box', filter:'#ffff00' }, data: [_.S(40), _.T(1, 2.5, 40), _.V(-0.2, 50), _.T(-1, 2.5, 40), _.S(60)] },
+            { id:19, name:"Black Hole", diff:"Master", theme: { floor:0x111111, fog:0x050505, obs:0x5500aa, shape:'cylinder', filter:'#5500aa' }, data: [_.S(40), _.T(-1, 3.0, 20), _.T(1, 3.0, 20), _.V(0.6, 80), _.S(80)] },
+            { id:20, name:"Horizon", diff:"Master", theme: { floor:0xffffff, fog:0xffeecc, obs:0xffaa00, shape:'box', filter:'#ffaa00' }, data: [_.S(200), _.V(0.1, 200), _.S(200)] }
         ];
 
         const CONFIG = {
             speed: 90.0,
-            turnSpeed: 7.0,
+            turnSpeed: 4.0,     // Ajustado a 4.0 como pediste
             gravity: 180.0,
             pathWidth: 30,
             cameraDist: 22,     
@@ -251,6 +268,15 @@
 
         let maxFPS = 60; 
         let lastFrameTime = 0;
+
+        // --- AUDIO ---
+        // Usamos nombres locales como pediste. Si no existen, fallarán silenciosamente.
+        const bgm = new Audio('bgm.mp3');
+        bgm.loop = true;
+        bgm.volume = 0.6;
+
+        const winSfx = new Audio('win.mp3');
+        winSfx.volume = 0.8;
 
         const textureLoader = new THREE.TextureLoader();
         textureLoader.crossOrigin = "Anonymous";
@@ -276,7 +302,6 @@
             scene = new THREE.Scene();
             
             scene.background = skyboxTexture;
-            // Niebla inicial (será sobreescrita por nivel)
             scene.fog = new THREE.FogExp2(0x000000, 0.001);
 
             camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 2000);
@@ -318,6 +343,37 @@
             requestAnimationFrame(animate);
         }
 
+        // --- FUNCIONES DE AUDIO ---
+        function playMusic() {
+            bgm.currentTime = 0;
+            bgm.volume = 0.6;
+            bgm.play().catch(e => console.log("Audio autoplay blocked"));
+        }
+
+        function stopMusic() {
+            bgm.pause();
+            bgm.currentTime = 0;
+        }
+
+        function fadeOutMusic() {
+            let vol = bgm.volume;
+            const fade = setInterval(() => {
+                if (vol > 0.05) {
+                    vol -= 0.05;
+                    bgm.volume = vol;
+                } else {
+                    bgm.pause();
+                    clearInterval(fade);
+                }
+            }, 100);
+        }
+
+        function playWinSound() {
+            stopMusic();
+            winSfx.currentTime = 0;
+            winSfx.play().catch(e => {});
+        }
+
         function createLevelMenu() {
             const grid = document.getElementById('grid-container');
             grid.innerHTML = ''; 
@@ -327,10 +383,8 @@
                 card.onclick = () => startLevel(index);
                 const img = document.createElement('img');
                 img.className = 'card-image';
-                // Usar color hexadecimal del nivel sin el # para la URL del placeholder
                 const hexColor = lvl.theme.fog.toString(16).padStart(6, '0');
                 img.src = `https://placehold.co/400x250/${hexColor}/ffffff?text=${encodeURIComponent(lvl.name)}`;
-                
                 const badge = document.createElement('div');
                 badge.className = `card-badge diff-${lvl.diff}`;
                 badge.innerText = lvl.diff;
@@ -346,9 +400,14 @@
 
         function showMenu() {
             isGameActive = false;
+            stopMusic();
             document.querySelectorAll('.modal-screen').forEach(e => e.classList.add('hidden'));
             document.getElementById('hud-container').style.display = 'none';
-            document.getElementById('ui-layer').style.background = "rgba(15, 15, 20, 0.85)";
+            
+            // Fondo menú limpio
+            document.getElementById('ui-layer').style.backgroundColor = "rgba(10, 10, 15, 0.95)";
+            document.getElementById('color-overlay').style.backgroundColor = "transparent";
+            
             document.getElementById('level-selector').classList.remove('hidden');
         }
 
@@ -393,20 +452,20 @@
 
             document.getElementById('level-display').innerText = `${level.id}. ${level.name}`;
 
-            // --- APLICAR TEMA VISUAL ---
-            // Color Niebla
+            // APLICAR TEMA Y FILTROS
             scene.fog.color.setHex(theme.fog);
             
-            // Material Suelo (Tintado)
+            // Aplicar filtro de color en el UI layer
+            document.getElementById('color-overlay').style.backgroundColor = theme.filter;
+            
             const matFloor = new THREE.MeshStandardMaterial({ 
                 map: floorTexture, 
                 roughness: 0.4,
-                color: theme.floor // Tinte del suelo
+                color: theme.floor 
             });
             
             const matFinish = new THREE.MeshStandardMaterial({ color: 0x00ff00, emissive: 0x005500 });
             
-            // Material Obstáculo
             const matObs = new THREE.MeshStandardMaterial({ 
                 color: theme.obs, 
                 emissive: theme.obs, 
@@ -435,16 +494,14 @@
                 scene.add(mesh);
                 pathSegments.push(mesh);
 
-                // OBSTÁCULOS VARIADOS
-                const difficultyFactor = (currentLevel / 15); 
+                const difficultyFactor = (currentLevel / 20); 
                 const obsChance = 0.03 + (difficultyFactor * 0.1); 
                 
                 if(!isFinish && Math.random() < obsChance) {
                     let obsGeo;
-                    // Forma según tema
                     if (theme.shape === 'cone') obsGeo = new THREE.ConeGeometry(2, 4, 16);
                     else if (theme.shape === 'cylinder') obsGeo = new THREE.CylinderGeometry(1.5, 1.5, 4, 16);
-                    else obsGeo = new THREE.BoxGeometry(3,3,3); // Box default
+                    else obsGeo = new THREE.BoxGeometry(3,3,3);
 
                     const obs = new THREE.Mesh(obsGeo, matObs);
                     const offset = (Math.random()-0.5) * (CONFIG.pathWidth-8);
@@ -491,7 +548,10 @@
         function startLevel(idx) {
             currentLevel = idx;
             try { document.documentElement.requestFullscreen().catch(()=>{}); } catch(e){}
-            document.getElementById('ui-layer').style.background = "none";
+            
+            // Hacer transparente el fondo del UI para ver el juego y el filtro
+            document.getElementById('ui-layer').style.backgroundColor = "transparent";
+            
             document.getElementById('level-selector').classList.add('hidden');
             document.getElementById('game-over').classList.add('hidden');
             document.getElementById('level-complete').classList.add('hidden');
@@ -503,9 +563,14 @@
             generateLevel(idx);
             isGameActive = true;
             clock.start();
+            playMusic(); // INICIAR MUSICA
         }
 
-        function restartLevel() { startLevel(currentLevel); }
+        function restartLevel() { 
+            stopMusic(); 
+            startLevel(currentLevel); 
+        }
+        
         function nextLevel() { 
             if(currentLevel < LEVELS.length - 1) startLevel(currentLevel + 1);
             else showMenu();
@@ -569,6 +634,7 @@
                         playerVelY = 0;
                         if(hit.object.userData.isFinish) {
                             isGameActive = false;
+                            playWinSound();
                             document.getElementById('level-complete').classList.remove('hidden');
                         }
                     }
@@ -576,6 +642,7 @@
 
                 if(player.position.y < -500) {
                     isGameActive = false;
+                    fadeOutMusic();
                     document.getElementById('fail-reason').innerText = "Caída al vacío";
                     document.getElementById('game-over').classList.remove('hidden');
                 }
@@ -586,6 +653,7 @@
                 for(let o of obstacles) {
                     if(player.position.distanceToSquared(o.position) < 15) {
                         isGameActive = false;
+                        fadeOutMusic();
                         document.getElementById('fail-reason').innerText = "¡Choque!";
                         document.getElementById('game-over').classList.remove('hidden');
                     }
