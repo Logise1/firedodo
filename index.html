@@ -14,17 +14,16 @@
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
             z-index: 100; pointer-events: none;
             display: flex; flex-direction: column; justify-content: center; align-items: center;
-            /* Fondo base del menú (sin blur) */
             background: rgba(10, 10, 15, 0.95);
             transition: background-color 0.5s ease;
         }
 
-        /* Capa de tinte de color para el juego */
+        /* Capa de tinte de color */
         #color-overlay {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
             z-index: 90; pointer-events: none;
-            mix-blend-mode: overlay; /* Mezcla con el 3D para tintar */
-            opacity: 0.2; /* Sutileza del filtro */
+            mix-blend-mode: overlay; 
+            opacity: 0.2; 
             background: transparent;
             transition: background-color 1s;
         }
@@ -96,11 +95,12 @@
         .diff-Hard { color: #ff0000; border-color: #ff0000; }
         .diff-Insane { color: #aa00ff; border-color: #aa00ff; }
         .diff-Expert { color: #00ffff; border-color: #00ffff; }
-        .diff-Master { color: #ff00ff; border-color: #ff00ff; } /* Nuevo rango para niveles extra */
+        .diff-Master { color: #ff00ff; border-color: #ff00ff; }
+        .diff-Godlike { color: #ffffff; border-color: #ffffff; text-shadow: 0 0 5px #ff0000; }
 
         .card-title-overlay {
             position: absolute; bottom: 10px; left: 10px; color: #fff; font-size: 16px; font-weight: 800;
-            text-shadow: 2px 2px 4px #000; z-index: 2; max-width: 70%; 
+            text-shadow: 2px 2px 4px #000; z-index: 2; max-width: 65%; 
             white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
         }
         .card-gradient {
@@ -167,7 +167,6 @@
     <div id="left-zone" class="control-zone"></div>
     <div id="right-zone" class="control-zone"></div>
 
-    <!-- OVERLAY DE COLOR PARA EL JUEGO -->
     <div id="color-overlay"></div>
 
     <div id="ui-layer">
@@ -185,7 +184,6 @@
                     </select>
                 </div>
             </div>
-            
             <div class="level-grid-container">
                 <div class="level-grid" id="grid-container"></div>
             </div>
@@ -221,35 +219,54 @@
             V: (slope, len) => ({ t:'V', s:slope, len })
         };
 
-        // --- CONFIGURACIÓN DE TEMAS VISUALES ---
-        // floorTint: Color suelo, fogColor: Fondo, obsColor: Obstáculos, filter: Color del filtro de pantalla (CSS)
+        // --- NIVELES (30 Total) ---
         const LEVELS = [
+            // 1-5: Tutorial / Easy
             { id:1, name:"Space Walk", diff:"Easy", theme: { floor:0xaaaaaa, fog:0x000010, obs:0x00ffff, shape:'box', filter:'#00ffff' }, data: [_.S(80), _.T(-1, 0.3, 60), _.S(60), _.T(1, 0.3, 60), _.S(100)] },
             { id:2, name:"Candy Land", diff:"Easy", theme: { floor:0xffdddd, fog:0x330011, obs:0xff00aa, shape:'cylinder', filter:'#ff00aa' }, data: [_.S(60), _.T(1, 0.5, 80), _.S(40), _.T(-1, 0.5, 80), _.S(120)] },
             { id:3, name:"Toxic Waste", diff:"Easy", theme: { floor:0xddffdd, fog:0x002200, obs:0x00ff00, shape:'box', filter:'#00ff00' }, data: [_.S(40), _.V(0.2, 100), _.S(40), _.T(-1, 0.5, 60), _.V(0.2, 100), _.S(80)] },
             { id:4, name:"Solar", diff:"Medium", theme: { floor:0xffffcc, fog:0x221100, obs:0xffaa00, shape:'cone', filter:'#ffaa00' }, data: [_.S(40), _.T(1, 0.8, 40), _.T(-1, 0.8, 40), _.T(1, 0.8, 40), _.T(-1, 0.8, 40), _.S(80)] },
             { id:5, name:"Hyper Speed", diff:"Medium", theme: { floor:0xccccff, fog:0x000033, obs:0x4444ff, shape:'cylinder', filter:'#4444ff' }, data: [_.S(150), _.T(-1, 0.2, 100), _.S(200)] },
+            
+            // 6-10: Medium / Hard
             { id:6, name:"Deep Sea", diff:"Medium", theme: { floor:0xaaffff, fog:0x001122, obs:0x00aaaa, shape:'box', filter:'#00aaaa' }, data: [_.S(40), _.V(0.1, 80), _.S(40), _.V(-0.1, 80), _.S(80)] },
             { id:7, name:"Red Alert", diff:"Hard", theme: { floor:0xffaaaa, fog:0x330000, obs:0xff0000, shape:'cone', filter:'#ff0000' }, data: [_.S(40), _.V(-0.3, 150), _.S(80), _.T(1, 0.4, 80), _.S(100)] },
             { id:8, name:"Jungle", diff:"Hard", theme: { floor:0xaaffaa, fog:0x002211, obs:0x008844, shape:'cylinder', filter:'#00ff44' }, data: [_.S(60), _.T(1, 1.0, 30), _.T(-1, 1.0, 30), _.T(1, 1.0, 30), _.T(-1, 1.0, 30), _.S(100)] },
             { id:9, name:"Whiteout", diff:"Hard", theme: { floor:0xffffff, fog:0x888888, obs:0x222222, shape:'box', filter:'#ffffff' }, data: [_.S(40), _.T(1, 1.0, 80), _.S(20), _.T(-1, 1.0, 80), _.S(60)] },
             { id:10, name:"Void", diff:"Insane", theme: { floor:0x666666, fog:0x000000, obs:0xaa00ff, shape:'cone', filter:'#aa00ff' }, data: [_.V(0.3, 60), _.V(-0.3, 60), _.T(1, 0.8, 60), _.V(0.3, 60), _.V(-0.3, 60), _.S(80)] },
+            
+            // 11-15: Insane / Expert
             { id:11, name:"Rusty", diff:"Insane", theme: { floor:0xddbb99, fog:0x221105, obs:0x884400, shape:'cylinder', filter:'#ff8800' }, data: [_.S(40), _.T(1, 0.5, 300), _.S(80)] },
             { id:12, name:"Neon Nights", diff:"Insane", theme: { floor:0x333333, fog:0x110022, obs:0xff00ff, shape:'box', filter:'#ff00ff' }, data: [_.S(40), _.T(-1, 1.2, 80), _.S(40), _.T(1, 1.2, 80), _.S(80)] },
             { id:13, name:"Glacier", diff:"Expert", theme: { floor:0xddeeff, fog:0x223344, obs:0x0088ff, shape:'cone', filter:'#0088ff' }, data: [_.S(40), _.T(1, 1.5, 40), _.V(-0.2, 120), _.T(-1, 1.5, 40), _.S(80)] },
             { id:14, name:"Matrix", diff:"Expert", theme: { floor:0x000000, fog:0x002200, obs:0x00ff00, shape:'box', filter:'#00ff00' }, data: [_.S(40), _.T(-1, 1.8, 40), _.T(1, 1.8, 40), _.V(0.4, 60), _.T(-1, 1.5, 80), _.S(120)] },
             { id:15, name:"The End", diff:"Expert", theme: { floor:0x222222, fog:0x111111, obs:0xffffff, shape:'cylinder', filter:'#aaaaaa' }, data: [_.S(40), _.V(-0.4, 100), _.T(1, 1.5, 60), _.V(0.4, 100), _.T(-1, 1.5, 60), _.S(150)] },
-            // NUEVOS NIVELES EXTRA
-            { id:16, name:"Nebula", diff:"Master", theme: { floor:0x220022, fog:0x110033, obs:0x00ffff, shape:'box', filter:'#ff00ff' }, data: [_.S(60), _.T(1, 2.0, 40), _.V(0.5, 80), _.T(-1, 2.0, 40), _.S(80)] },
-            { id:17, name:"Asteroid", diff:"Master", theme: { floor:0x443322, fog:0x111111, obs:0x888888, shape:'cone', filter:'#aa5500' }, data: [_.V(-0.5, 100), _.T(1, 1.0, 20), _.T(-1, 1.0, 20), _.T(1, 1.0, 20), _.S(100)] },
-            { id:18, name:"Cyberpunk", diff:"Master", theme: { floor:0x001122, fog:0x000022, obs:0xffff00, shape:'box', filter:'#ffff00' }, data: [_.S(40), _.T(1, 2.5, 40), _.V(-0.2, 50), _.T(-1, 2.5, 40), _.S(60)] },
-            { id:19, name:"Black Hole", diff:"Master", theme: { floor:0x111111, fog:0x050505, obs:0x5500aa, shape:'cylinder', filter:'#5500aa' }, data: [_.S(40), _.T(-1, 3.0, 20), _.T(1, 3.0, 20), _.V(0.6, 80), _.S(80)] },
-            { id:20, name:"Horizon", diff:"Master", theme: { floor:0xffffff, fog:0xffeecc, obs:0xffaa00, shape:'box', filter:'#ffaa00' }, data: [_.S(200), _.V(0.1, 200), _.S(200)] }
+            
+            // 16-20: Reajustados a HARD (antes Master)
+            { id:16, name:"Nebula", diff:"Hard", theme: { floor:0x220022, fog:0x110033, obs:0x00ffff, shape:'box', filter:'#ff00ff' }, data: [_.S(60), _.T(1, 2.0, 40), _.V(0.5, 80), _.T(-1, 2.0, 40), _.S(80)] },
+            { id:17, name:"Asteroid", diff:"Hard", theme: { floor:0x443322, fog:0x111111, obs:0x888888, shape:'cone', filter:'#aa5500' }, data: [_.V(-0.5, 100), _.T(1, 1.0, 20), _.T(-1, 1.0, 20), _.T(1, 1.0, 20), _.S(100)] },
+            { id:18, name:"Cyberpunk", diff:"Hard", theme: { floor:0x001122, fog:0x000022, obs:0xffff00, shape:'box', filter:'#ffff00' }, data: [_.S(40), _.T(1, 2.5, 40), _.V(-0.2, 50), _.T(-1, 2.5, 40), _.S(60)] },
+            { id:19, name:"Black Hole", diff:"Hard", theme: { floor:0x111111, fog:0x050505, obs:0x5500aa, shape:'cylinder', filter:'#5500aa' }, data: [_.S(40), _.T(-1, 3.0, 20), _.T(1, 3.0, 20), _.V(0.6, 80), _.S(80)] },
+            { id:20, name:"Horizon", diff:"Hard", theme: { floor:0xffffff, fog:0xffeecc, obs:0xffaa00, shape:'box', filter:'#ffaa00' }, data: [_.S(200), _.V(0.1, 200), _.S(200)] },
+
+            // 21-25: Nuevos INSANE / EXPERT (Más largos)
+            { id:21, name:"Magma Core", diff:"Insane", theme: { floor:0x330000, fog:0x1a0000, obs:0xff4400, shape:'cone', filter:'#ff4400' }, data: [_.S(50), _.V(-0.6, 150), _.T(1, 2.0, 50), _.T(-1, 2.0, 50), _.S(100)] },
+            { id:22, name:"Serpent", diff:"Insane", theme: { floor:0x003300, fog:0x001100, obs:0x00ff44, shape:'cylinder', filter:'#00ff44' }, data: [_.S(40), _.T(1, 1.0, 20), _.T(-1, 1.0, 20), _.T(1, 1.0, 20), _.T(-1, 1.0, 20), _.T(1, 1.0, 20), _.T(-1, 1.0, 20), _.S(80)] },
+            { id:23, name:"Sky High", diff:"Expert", theme: { floor:0xeeffff, fog:0xccffff, obs:0x0088ff, shape:'box', filter:'#00aaff' }, data: [_.V(0.5, 200), _.S(20), _.T(1, 2.5, 40), _.V(-0.5, 200), _.S(50)] },
+            { id:24, name:"Nightmare", diff:"Expert", theme: { floor:0x110011, fog:0x050005, obs:0xff0000, shape:'cone', filter:'#550000' }, data: [_.S(40), _.T(1, 3.0, 30), _.T(-1, 3.0, 30), _.V(-0.3, 100), _.T(1, 2.5, 50), _.S(120)] },
+            { id:25, name:"Quantum", diff:"Master", theme: { floor:0x222233, fog:0x000011, obs:0xffffff, shape:'box', filter:'#ffffff' }, data: [_.S(60), _.V(0.4, 100), _.T(-1, 3.0, 40), _.V(-0.4, 100), _.T(1, 3.0, 40), _.S(200)] },
+
+            // 26-30: Nuevos GODLIKE (Extremos y Largos)
+            { id:26, name:"Omega", diff:"Godlike", theme: { floor:0x000000, fog:0x000000, obs:0xff00ff, shape:'cylinder', filter:'#ff00ff' }, data: [_.S(100), _.T(1, 1.0, 200), _.T(-1, 1.0, 200), _.S(150)] },
+            { id:27, name:"Inferno", diff:"Godlike", theme: { floor:0x440000, fog:0x220000, obs:0xffaa00, shape:'cone', filter:'#ff2200' }, data: [_.V(-0.7, 200), _.T(1, 3.5, 30), _.V(0.7, 200), _.T(-1, 3.5, 30), _.S(100)] },
+            { id:28, name:"Zenith", diff:"Godlike", theme: { floor:0xffffee, fog:0xffffff, obs:0x444444, shape:'box', filter:'#ffffaa' }, data: [_.S(50), _.T(1, 2.0, 30), _.T(-1, 2.0, 30), _.V(0.2, 300), _.S(50)] },
+            { id:29, name:"Abyss", diff:"Godlike", theme: { floor:0x050505, fog:0x020202, obs:0x333333, shape:'box', filter:'#111111' }, data: [_.S(50), _.V(-0.8, 300), _.T(1, 4.0, 40), _.S(200)] },
+            { id:30, name:"Firedodo", diff:"Godlike", theme: { floor:0xff4400, fog:0x220000, obs:0xffff00, shape:'cylinder', filter:'#ff4400' }, data: [_.S(100), _.T(-1, 2.0, 50), _.V(0.5, 100), _.T(1, 2.0, 50), _.V(-0.5, 100), _.T(-1, 3.0, 50), _.S(300)] }
         ];
 
         const CONFIG = {
             speed: 90.0,
-            turnSpeed: 4.0,     // Ajustado a 4.0 como pediste
+            turnSpeed: 4.0,     // Solicitado 4.0
             gravity: 180.0,
             pathWidth: 30,
             cameraDist: 22,     
@@ -268,9 +285,9 @@
 
         let maxFPS = 60; 
         let lastFrameTime = 0;
+        let fadeInterval; // Para controlar el fade out
 
         // --- AUDIO ---
-        // Usamos nombres locales como pediste. Si no existen, fallarán silenciosamente.
         const bgm = new Audio('bgm.mp3');
         bgm.loop = true;
         bgm.volume = 0.6;
@@ -343,27 +360,32 @@
             requestAnimationFrame(animate);
         }
 
-        // --- FUNCIONES DE AUDIO ---
+        // --- CORRECCIÓN DE AUDIO ---
         function playMusic() {
+            // Detener cualquier fade out activo para que no baje el volumen de la nueva música
+            clearInterval(fadeInterval);
+            bgm.volume = 0.6; // Restaurar volumen
             bgm.currentTime = 0;
-            bgm.volume = 0.6;
             bgm.play().catch(e => console.log("Audio autoplay blocked"));
         }
 
         function stopMusic() {
+            clearInterval(fadeInterval);
             bgm.pause();
             bgm.currentTime = 0;
+            bgm.volume = 0.6;
         }
 
         function fadeOutMusic() {
+            clearInterval(fadeInterval); // Limpiar por si acaso
             let vol = bgm.volume;
-            const fade = setInterval(() => {
+            fadeInterval = setInterval(() => {
                 if (vol > 0.05) {
                     vol -= 0.05;
                     bgm.volume = vol;
                 } else {
                     bgm.pause();
-                    clearInterval(fade);
+                    clearInterval(fadeInterval);
                 }
             }, 100);
         }
@@ -403,11 +425,8 @@
             stopMusic();
             document.querySelectorAll('.modal-screen').forEach(e => e.classList.add('hidden'));
             document.getElementById('hud-container').style.display = 'none';
-            
-            // Fondo menú limpio
-            document.getElementById('ui-layer').style.backgroundColor = "rgba(10, 10, 15, 0.95)";
+            document.getElementById('ui-layer').style.background = "rgba(10, 10, 15, 0.95)";
             document.getElementById('color-overlay').style.backgroundColor = "transparent";
-            
             document.getElementById('level-selector').classList.remove('hidden');
         }
 
@@ -454,22 +473,14 @@
 
             // APLICAR TEMA Y FILTROS
             scene.fog.color.setHex(theme.fog);
-            
-            // Aplicar filtro de color en el UI layer
             document.getElementById('color-overlay').style.backgroundColor = theme.filter;
             
             const matFloor = new THREE.MeshStandardMaterial({ 
-                map: floorTexture, 
-                roughness: 0.4,
-                color: theme.floor 
+                map: floorTexture, roughness: 0.4, color: theme.floor 
             });
-            
             const matFinish = new THREE.MeshStandardMaterial({ color: 0x00ff00, emissive: 0x005500 });
-            
             const matObs = new THREE.MeshStandardMaterial({ 
-                color: theme.obs, 
-                emissive: theme.obs, 
-                emissiveIntensity: 0.5 
+                color: theme.obs, emissive: theme.obs, emissiveIntensity: 0.5 
             });
 
             let cursor = { pos: new THREE.Vector3(0, 0, 30), yaw: 0, pitch: 0 };
@@ -494,8 +505,8 @@
                 scene.add(mesh);
                 pathSegments.push(mesh);
 
-                const difficultyFactor = (currentLevel / 20); 
-                const obsChance = 0.03 + (difficultyFactor * 0.1); 
+                // Probabilidad obstáculos
+                const obsChance = 0.03 + (currentLevel * 0.002); // Muy pocos pero aumentan levemente
                 
                 if(!isFinish && Math.random() < obsChance) {
                     let obsGeo;
@@ -548,10 +559,7 @@
         function startLevel(idx) {
             currentLevel = idx;
             try { document.documentElement.requestFullscreen().catch(()=>{}); } catch(e){}
-            
-            // Hacer transparente el fondo del UI para ver el juego y el filtro
-            document.getElementById('ui-layer').style.backgroundColor = "transparent";
-            
+            document.getElementById('ui-layer').style.background = "transparent";
             document.getElementById('level-selector').classList.add('hidden');
             document.getElementById('game-over').classList.add('hidden');
             document.getElementById('level-complete').classList.add('hidden');
@@ -563,10 +571,11 @@
             generateLevel(idx);
             isGameActive = true;
             clock.start();
-            playMusic(); // INICIAR MUSICA
+            playMusic(); // MÚSICA ON
         }
 
         function restartLevel() { 
+            // IMPORTANTE: Parar música completamente antes de reiniciar para evitar problemas con el fade
             stopMusic(); 
             startLevel(currentLevel); 
         }
