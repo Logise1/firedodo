@@ -287,7 +287,7 @@
         const TOTAL_LEVELS = ZONES.length * LEVELS_PER_ZONE;
         let LEVELS = []; // Se generará procedimentalmente
 
-        // --- GENERADOR DE NIVELES ---
+        // --- GENERADOR DE NIVELES (DIFICULTAD AGRESIVA) ---
         const _ = {
             S: (len) => ({ t:'S', len }),
             T: (dir, f, len) => ({ t:'T', dir, f, len }), 
@@ -301,29 +301,41 @@
             ZONES.forEach((zone, zIdx) => {
                 for (let i = 0; i < LEVELS_PER_ZONE; i++) {
                     const lvlNum = i + 1;
-                    const difficulty = zIdx * 0.2 + (i / LEVELS_PER_ZONE) * 0.2; // 0.0 a 1.0 aprox
+                    const totalProgress = globalIndex / TOTAL_LEVELS; // 0.0 a 1.0
                     
-                    // Generar estructura aleatoria basada en dificultad
-                    const data = [_.S(60)]; // Inicio seguro
-                    const segments = 5 + Math.floor(difficulty * 8); 
+                    // --- NUEVA CURVA DE DIFICULTAD ---
+                    // Math.pow(x, 0.4) hace que la dificultad suba MUY rápido al principio y luego se aplane.
+                    // Al 10% del juego (nivel 7-8) ya tendrás cerca del 40% de la dificultad máxima en giros.
+                    const difficulty = Math.pow(totalProgress + 0.05, 0.5); 
+                    
+                    // --- LONGITUD PROGRESIVA ---
+                    // Empieza en 12 segmentos y sube linealmente hasta ~55 segmentos.
+                    // Esto hace que los niveles finales sean pruebas de resistencia.
+                    const segments = 12 + Math.floor(globalIndex * 0.6); 
+
+                    const data = [_.S(40)]; // Inicio
                     
                     for(let s=0; s<segments; s++) {
                         const r = Math.random();
-                        const len = 40 + Math.random() * 60;
+                        // Los segmentos se hacen más cortos con la dificultad para exigir reflejos más rápidos
+                        // Nivel 1: ~60 longitud. Nivel 75: ~30 longitud (muy frenético)
+                        const segLen = 60 - (difficulty * 30) + (Math.random() * 20); 
                         
-                        if (r < 0.4) { // Recta
-                            data.push(_.S(len));
+                        if (r < 0.3) { // Recta
+                            data.push(_.S(segLen));
                         } else if (r < 0.7) { // Giro
                             const dir = Math.random() > 0.5 ? 1 : -1;
-                            const force = 0.5 + difficulty * 1.5;
-                            data.push(_.T(dir, force, len));
+                            // Giros mucho más cerrados y agresivos desde temprano
+                            const force = 0.8 + (difficulty * 2.5); 
+                            data.push(_.T(dir, force, segLen));
                         } else { // Pendiente
-                            const slope = (Math.random() > 0.5 ? 0.2 : -0.2) * (1 + difficulty);
-                            data.push(_.V(slope, len));
-                            data.push(_.S(30)); // Estabilizar tras pendiente
+                            // Pendientes más pronunciadas
+                            const slope = (Math.random() > 0.5 ? 0.3 : -0.3) * (0.8 + difficulty);
+                            data.push(_.V(slope, segLen));
+                            data.push(_.S(20)); // Pequeño descanso tras pendiente
                         }
                     }
-                    data.push(_.S(100)); // Meta
+                    data.push(_.S(80)); // Meta
 
                     LEVELS.push({
                         id: globalIndex + 1,
@@ -331,7 +343,7 @@
                         name: `Nivel ${globalIndex + 1}`,
                         theme: zone.theme,
                         data: data,
-                        difficultyVal: difficulty // Factor para pinchos
+                        difficultyVal: difficulty // Usado para calcular obstáculos
                     });
                     globalIndex++;
                 }
@@ -426,8 +438,6 @@
             container.innerHTML = ''; 
             
             ZONES.forEach((zone, zIdx) => {
-                // Verificar si la zona está desbloqueada (basado en niveles anteriores)
-                // La Zona 1 siempre abierta. Zona 2 requiere haber pasado nivel 15 (el último de Zona 1).
                 const startLvl = zIdx * LEVELS_PER_ZONE + 1;
                 const isZoneUnlocked = zIdx === 0 || maxUnlockedLevel >= startLvl;
 
@@ -444,7 +454,7 @@
                 grid.className = 'level-grid';
 
                 for(let i=0; i<LEVELS_PER_ZONE; i++) {
-                    const globalIdx = startLvl + i - 1; // 0-based index for LEVELS array
+                    const globalIdx = startLvl + i - 1; 
                     const lvlData = LEVELS[globalIdx];
                     const isLevelUnlocked = (globalIdx + 1) <= maxUnlockedLevel;
                     
@@ -546,9 +556,9 @@
                 scene.add(mesh);
                 pathSegments.push(mesh);
 
-                // --- OBSTÁCULOS (REDUCIDOS Y ESTÁTICOS) ---
-                // obsChance base reducido: 0.01 (fácil) a 0.15 (difícil)
-                const obsChance = 0.01 + (level.difficultyVal * 0.14);
+                // --- OBSTÁCULOS (ESCALADO AGRESIVO) ---
+                // Empieza en 5% (nivel 1) y sube hasta ~40% (nivel final)
+                const obsChance = 0.05 + (level.difficultyVal * 0.35);
 
                 if(!isFinish && Math.random() < obsChance) {
                     let obsGeo;
@@ -608,7 +618,7 @@
             document.getElementById('hud-container').style.display = 'none';
             document.getElementById('ui-layer').style.background = "rgba(5, 5, 10, 0.98)";
             document.getElementById('color-overlay').style.backgroundColor = "transparent";
-            createLevelMenu(); // Recargar menú para actualizar candados
+            createLevelMenu(); 
             document.getElementById('level-selector').classList.remove('hidden');
         }
         function nextLevel() {
