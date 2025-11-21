@@ -615,6 +615,18 @@
             if(currentLevelIdx < TOTAL_LEVELS - 1) startLevel(currentLevelIdx + 1);
             else showMenu();
         }
+        
+        function spawnParticle() {
+            const geo = new THREE.BoxGeometry(0.4, 0.4, 0.4);
+            const mat = new THREE.MeshBasicMaterial({ color: 0x00ffff, transparent: true, opacity: 0.8 });
+            const p = new THREE.Mesh(geo, mat);
+            p.position.copy(player.position);
+            p.position.x += (Math.random() - 0.5) * 2;
+            p.position.y += (Math.random() * 1); 
+            p.position.z += (Math.random() * 2) + 1; 
+            scene.add(p);
+            particles.push({ mesh: p, life: 1.0 });
+        }
 
         // --- CONTROL DE MÚSICA ---
         function playMusic() { clearInterval(fadeInterval); bgm.volume = 0.6; bgm.currentTime = 0; bgm.play().catch(e=>{}); }
