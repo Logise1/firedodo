@@ -285,9 +285,9 @@
 
         const LEVELS_PER_ZONE = 15;
         const TOTAL_LEVELS = ZONES.length * LEVELS_PER_ZONE;
-        let LEVELS = []; // Se generará procedimentalmente
+        let LEVELS = []; 
 
-        // --- GENERADOR DE NIVELES (DIFICULTAD AGRESIVA) ---
+        // --- GENERADOR DE NIVELES ---
         const _ = {
             S: (len) => ({ t:'S', len }),
             T: (dir, f, len) => ({ t:'T', dir, f, len }), 
@@ -301,38 +301,48 @@
             ZONES.forEach((zone, zIdx) => {
                 for (let i = 0; i < LEVELS_PER_ZONE; i++) {
                     const lvlNum = i + 1;
-                    const totalProgress = globalIndex / TOTAL_LEVELS; // 0.0 a 1.0
+                    // --- NUEVA LÓGICA DE DIFICULTAD EQUILIBRADA ---
+                    // 0.0 = Nivel 1, 1.0 = Nivel 75
+                    const progress = globalIndex / TOTAL_LEVELS; 
                     
-                    // --- NUEVA CURVA DE DIFICULTAD ---
-                    // Math.pow(x, 0.4) hace que la dificultad suba MUY rápido al principio y luego se aplane.
-                    // Al 10% del juego (nivel 7-8) ya tendrás cerca del 40% de la dificultad máxima en giros.
-                    const difficulty = Math.pow(totalProgress + 0.05, 0.5); 
+                    // Curva de dificultad: Empieza muy suave y sube
+                    // Para los primeros 5 niveles, dificultad casi 0.
+                    let difficulty;
+                    if (globalIndex < 5) difficulty = 0.05; // Tutorial forzado
+                    else difficulty = Math.pow(progress, 0.8); // Curva suave creciente
                     
                     // --- LONGITUD PROGRESIVA ---
-                    // Empieza en 12 segmentos y sube linealmente hasta ~55 segmentos.
-                    // Esto hace que los niveles finales sean pruebas de resistencia.
-                    const segments = 12 + Math.floor(globalIndex * 0.6); 
+                    // Nivel 1: 5 segmentos (Muy corto, como antes).
+                    // Nivel 75: ~50 segmentos.
+                    const segments = 5 + Math.floor(globalIndex * 0.6); 
 
-                    const data = [_.S(40)]; // Inicio
+                    const data = [_.S(50)]; // Inicio recto seguro
                     
                     for(let s=0; s<segments; s++) {
-                        const r = Math.random();
-                        // Los segmentos se hacen más cortos con la dificultad para exigir reflejos más rápidos
-                        // Nivel 1: ~60 longitud. Nivel 75: ~30 longitud (muy frenético)
-                        const segLen = 60 - (difficulty * 30) + (Math.random() * 20); 
+                        // Longitud de segmento: Se reduce con la dificultad (de 70 a 30)
+                        const segLen = 70 - (difficulty * 40) + (Math.random() * 10);
                         
-                        if (r < 0.3) { // Recta
+                        const r = Math.random();
+                        
+                        // En niveles bajos (dificultad < 0.2), evitar pendientes fuertes
+                        const allowSlopes = difficulty > 0.15;
+                        
+                        if (r < 0.4 || (globalIndex < 3 && r < 0.7)) { // Rectas (más probables al inicio)
                             data.push(_.S(segLen));
-                        } else if (r < 0.7) { // Giro
+                        } else if (r < 0.8) { // Giros
                             const dir = Math.random() > 0.5 ? 1 : -1;
-                            // Giros mucho más cerrados y agresivos desde temprano
-                            const force = 0.8 + (difficulty * 2.5); 
+                            // Fuerza de giro: Suave al principio (0.3), fuerte al final (2.5)
+                            const force = 0.3 + (difficulty * 2.2); 
                             data.push(_.T(dir, force, segLen));
-                        } else { // Pendiente
-                            // Pendientes más pronunciadas
-                            const slope = (Math.random() > 0.5 ? 0.3 : -0.3) * (0.8 + difficulty);
-                            data.push(_.V(slope, segLen));
-                            data.push(_.S(20)); // Pequeño descanso tras pendiente
+                        } else { // Pendientes
+                            if (allowSlopes) {
+                                const slope = (Math.random() > 0.5 ? 0.25 : -0.25) * (0.5 + difficulty);
+                                data.push(_.V(slope, segLen));
+                                data.push(_.S(30));
+                            } else {
+                                // Si no tocan pendientes, recta
+                                data.push(_.S(segLen));
+                            }
                         }
                     }
                     data.push(_.S(80)); // Meta
@@ -343,7 +353,7 @@
                         name: `Nivel ${globalIndex + 1}`,
                         theme: zone.theme,
                         data: data,
-                        difficultyVal: difficulty // Usado para calcular obstáculos
+                        difficultyVal: difficulty
                     });
                     globalIndex++;
                 }
@@ -424,7 +434,7 @@
             requestAnimationFrame(animate);
         }
 
-        // --- LÓGICA DE MENÚ Y PROGRESO ---
+        // --- LÓGICA DE MENÚ ---
         function resetProgress() {
             if(confirm("¿Borrar todo el progreso?")) {
                 maxUnlockedLevel = 1;
@@ -485,10 +495,8 @@
                         grad.className = 'card-gradient';
                         card.appendChild(grad);
                     }
-
                     grid.appendChild(card);
                 }
-
                 zoneDiv.appendChild(header);
                 zoneDiv.appendChild(grid);
                 container.appendChild(zoneDiv);
@@ -556,9 +564,12 @@
                 scene.add(mesh);
                 pathSegments.push(mesh);
 
-                // --- OBSTÁCULOS (ESCALADO AGRESIVO) ---
-                // Empieza en 5% (nivel 1) y sube hasta ~40% (nivel final)
-                const obsChance = 0.05 + (level.difficultyVal * 0.35);
+                // --- OBSTÁCULOS ---
+                // Primeros 5 niveles SIN obstáculos. Luego sube.
+                let obsChance = 0;
+                if (level.id > 5) {
+                    obsChance = 0.02 + (level.difficultyVal * 0.3);
+                }
 
                 if(!isFinish && Math.random() < obsChance) {
                     let obsGeo;
@@ -690,6 +701,8 @@
                 const rayPos = player.position.clone(); rayPos.y += 20; 
                 raycaster.set(rayPos, downVec);
                 const hits = raycaster.intersectObjects(pathSegments);
+                
+                // --- CORRECCIÓN DE CÁMARA ---
                 let currentSlope = 0;
 
                 if(hits.length > 0) {
@@ -702,7 +715,6 @@
                         if(hit.object.userData.isFinish) {
                             isGameActive = false;
                             playWinSound();
-                            // GUARDAR PROGRESO
                             if (currentLevelIdx + 2 > maxUnlockedLevel) {
                                 maxUnlockedLevel = currentLevelIdx + 2;
                                 localStorage.setItem('firedodo_progress', maxUnlockedLevel);
@@ -712,9 +724,12 @@
                     }
                 }
 
-                // Cámara dinámica
-                let targetH = CONFIG.cameraHeight; let targetD = CONFIG.cameraDist;
-                if (currentSlope < -0.1 || playerVelY < -10) { targetH = CONFIG.cameraHeight + 25; targetD = CONFIG.cameraDist - 5; }
+                // Lógica de cámara continua (sin saltos)
+                // Altura objetivo depende de la pendiente: si bajamos mucho (-0.3), subimos la cámara
+                const slopeFactor = Math.max(0, -currentSlope * 150); // 0 a ~50
+                const targetH = CONFIG.cameraHeight + slopeFactor;
+                const targetD = CONFIG.cameraDist - (slopeFactor * 0.2); // Acercar ligeramente si sube
+
                 currentCamHeight += (targetH - currentCamHeight) * 2.0 * dt;
                 currentCamDist += (targetD - currentCamDist) * 2.0 * dt;
 
@@ -750,7 +765,11 @@
                 const target = player.position.clone().add(camOff);
                 const lerp = 1 - Math.exp(-10 * dt); 
                 camera.position.lerp(target, lerp);
-                const lookDownOffset = (currentCamHeight > CONFIG.cameraHeight + 5) ? -10 : 0;
+                
+                // LookAt dinámico y suave sin ternarios (evita saltos)
+                const extraHeight = Math.max(0, currentCamHeight - CONFIG.cameraHeight);
+                const lookDownOffset = -extraHeight * 0.5; 
+
                 const lookTarget = player.position.clone().add(new THREE.Vector3(0, lookDownOffset, -30).applyAxisAngle(new THREE.Vector3(0,1,0), player.rotation.y));
                 camera.lookAt(lookTarget);
             }
