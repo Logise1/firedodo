@@ -276,18 +276,18 @@
 
         // --- DEFINICIÓN DE ZONAS ---
         const ZONES = [
-            { name: "Zona 1: Inicio", color: "#00ff88", theme: { floor:0xaaaaaa, fog:0x000010, obs:0x00ffff, shape:'box', filter:'#00ffff' } },
-            { name: "Zona 2: Neón",   color: "#ff00ff", theme: { floor:0x220022, fog:0x110033, obs:0xff00ff, shape:'cylinder', filter:'#ff00ff' } },
-            { name: "Zona 3: Tóxico", color: "#00ff00", theme: { floor:0x001100, fog:0x002200, obs:0x00ff00, shape:'box', filter:'#00ff00' } },
-            { name: "Zona 4: Hielo",  color: "#00ccff", theme: { floor:0xddeeff, fog:0x223344, obs:0x0088ff, shape:'cone', filter:'#0088ff' } },
-            { name: "Zona 5: Vacío",  color: "#ff4400", theme: { floor:0x111111, fog:0x050000, obs:0xff4400, shape:'cylinder', filter:'#ff4400' } }
+            { name: "Zona 1: Curvas", color: "#00ff88", theme: { floor:0xaaaaaa, fog:0x000010, obs:0x00ffff, shape:'box', filter:'#00ffff' } },
+            { name: "Zona 2: Colinas",   color: "#ff00ff", theme: { floor:0x220022, fog:0x110033, obs:0xff00ff, shape:'cylinder', filter:'#ff00ff' } },
+            { name: "Zona 3: Descenso", color: "#00ff00", theme: { floor:0x001100, fog:0x002200, obs:0x00ff00, shape:'box', filter:'#00ff00' } },
+            { name: "Zona 4: Vértigo",  color: "#00ccff", theme: { floor:0xddeeff, fog:0x223344, obs:0x0088ff, shape:'cone', filter:'#0088ff' } },
+            { name: "Zona 5: Caos",  color: "#ff4400", theme: { floor:0x111111, fog:0x050000, obs:0xff4400, shape:'cylinder', filter:'#ff4400' } }
         ];
 
         const LEVELS_PER_ZONE = 15;
         const TOTAL_LEVELS = ZONES.length * LEVELS_PER_ZONE;
         let LEVELS = []; 
 
-        // --- GENERADOR DE NIVELES ---
+        // --- GENERADOR DE NIVELES "ROLLERCOASTER" ---
         const _ = {
             S: (len) => ({ t:'S', len }),
             T: (dir, f, len) => ({ t:'T', dir, f, len }), 
@@ -301,51 +301,53 @@
             ZONES.forEach((zone, zIdx) => {
                 for (let i = 0; i < LEVELS_PER_ZONE; i++) {
                     const lvlNum = i + 1;
-                    // --- NUEVA LÓGICA DE DIFICULTAD EQUILIBRADA ---
-                    // 0.0 = Nivel 1, 1.0 = Nivel 75
                     const progress = globalIndex / TOTAL_LEVELS; 
                     
-                    // Curva de dificultad: Empieza muy suave y sube
-                    // Para los primeros 5 niveles, dificultad casi 0.
-                    let difficulty;
-                    if (globalIndex < 5) difficulty = 0.05; // Tutorial forzado
-                    else difficulty = Math.pow(progress, 0.8); // Curva suave creciente
-                    
-                    // --- LONGITUD PROGRESIVA ---
-                    // Nivel 1: 5 segmentos (Muy corto, como antes).
-                    // Nivel 75: ~50 segmentos.
-                    const segments = 5 + Math.floor(globalIndex * 0.6); 
+                    // Longitud CAPADA: De 12 segmentos a 25 máximo. No más niveles infinitos.
+                    const segments = 12 + Math.floor(Math.min(globalIndex, 30) * 0.4); 
 
-                    const data = [_.S(50)]; // Inicio recto seguro
+                    const data = [_.S(40)]; // Salida
                     
+                    let lastDir = 0; // Para alternar curvas
+
                     for(let s=0; s<segments; s++) {
-                        // Longitud de segmento: Se reduce con la dificultad (de 70 a 30)
-                        const segLen = 70 - (difficulty * 40) + (Math.random() * 10);
-                        
                         const r = Math.random();
+                        // Segmentos más cortos = más acción por segundo
+                        const segLen = 40 + (Math.random() * 30); 
                         
-                        // En niveles bajos (dificultad < 0.2), evitar pendientes fuertes
-                        const allowSlopes = difficulty > 0.15;
+                        // --- LÓGICA DE DISEÑO POR NIVELES ---
                         
-                        if (r < 0.4 || (globalIndex < 3 && r < 0.7)) { // Rectas (más probables al inicio)
-                            data.push(_.S(segLen));
-                        } else if (r < 0.8) { // Giros
-                            const dir = Math.random() > 0.5 ? 1 : -1;
-                            // Fuerza de giro: Suave al principio (0.3), fuerte al final (2.5)
-                            const force = 0.3 + (difficulty * 2.2); 
-                            data.push(_.T(dir, force, segLen));
-                        } else { // Pendientes
-                            if (allowSlopes) {
-                                const slope = (Math.random() > 0.5 ? 0.25 : -0.25) * (0.5 + difficulty);
-                                data.push(_.V(slope, segLen));
-                                data.push(_.S(30));
-                            } else {
-                                // Si no tocan pendientes, recta
+                        if (globalIndex < 3) { 
+                            // NIVELES 1-3: "NO TOCAR NADA" ESTÁ PROHIBIDO
+                            // Curvas suaves obligatorias, sin rectas largas.
+                            const dir = (s % 2 === 0) ? 1 : -1; // Zigzag suave
+                            data.push(_.T(dir, 0.3, segLen));
+                        } 
+                        else {
+                            // RESTO DEL JUEGO: GEOMETRÍA DIVERTIDA
+                            // Probabilidad alta de cosas "divertidas" (curvas/pendientes)
+                            // Probabilidad baja de rectas aburridas
+                            
+                            if (r < 0.2) { // Recta (Solo 20% probabilidad)
                                 data.push(_.S(segLen));
+                            } else if (r < 0.6) { // Curvas (40%)
+                                // Evitar dos giros fuertes al mismo lado
+                                let dir = Math.random() > 0.5 ? 1 : -1;
+                                if (Math.random() < 0.3) dir = -lastDir; // Fomentar zigzag
+                                lastDir = dir;
+                                
+                                // Fuerza aumenta con el progreso, pero no absurda
+                                const force = 0.5 + (progress * 1.5); 
+                                data.push(_.T(dir, force, segLen));
+                            } else { // Pendientes (40%) - ¡La salsa del juego!
+                                const slope = (Math.random() > 0.5 ? 0.3 : -0.3) * (0.8 + progress * 0.5);
+                                data.push(_.V(slope, segLen));
+                                // Pequeña curva después de la pendiente para suavizar
+                                data.push(_.T(Math.random() > 0.5 ? 1:-1, 0.2, 20)); 
                             }
                         }
                     }
-                    data.push(_.S(80)); // Meta
+                    data.push(_.S(60)); // Meta
 
                     LEVELS.push({
                         id: globalIndex + 1,
@@ -353,7 +355,7 @@
                         name: `Nivel ${globalIndex + 1}`,
                         theme: zone.theme,
                         data: data,
-                        difficultyVal: difficulty
+                        difficultyVal: progress
                     });
                     globalIndex++;
                 }
@@ -564,11 +566,12 @@
                 scene.add(mesh);
                 pathSegments.push(mesh);
 
-                // --- OBSTÁCULOS ---
-                // Primeros 5 niveles SIN obstáculos. Luego sube.
+                // --- OBSTÁCULOS (MINIMIZADOS) ---
+                // Niveles 1-4: CERO pinchos.
+                // Niveles 5+: Muy pocos pinchos (max 15%), confía en la caída.
                 let obsChance = 0;
-                if (level.id > 5) {
-                    obsChance = 0.02 + (level.difficultyVal * 0.3);
+                if (level.id > 4) {
+                    obsChance = 0.05 + (level.difficultyVal * 0.10); // Max 15%
                 }
 
                 if(!isFinish && Math.random() < obsChance) {
@@ -702,7 +705,7 @@
                 raycaster.set(rayPos, downVec);
                 const hits = raycaster.intersectObjects(pathSegments);
                 
-                // --- CORRECCIÓN DE CÁMARA ---
+                // --- CORRECCIÓN DE CÁMARA (SUAVE) ---
                 let currentSlope = 0;
 
                 if(hits.length > 0) {
@@ -724,14 +727,15 @@
                     }
                 }
 
-                // Lógica de cámara continua (sin saltos)
-                // Altura objetivo depende de la pendiente: si bajamos mucho (-0.3), subimos la cámara
-                const slopeFactor = Math.max(0, -currentSlope * 150); // 0 a ~50
+                // Lógica de cámara proporcional (Sin saltos)
+                // Si slope < 0 (bajada), subimos cámara. 
+                // Factor de suavizado aumentado para evitar tirones
+                const slopeFactor = Math.max(0, -currentSlope * 120); 
                 const targetH = CONFIG.cameraHeight + slopeFactor;
-                const targetD = CONFIG.cameraDist - (slopeFactor * 0.2); // Acercar ligeramente si sube
+                const targetD = CONFIG.cameraDist - (slopeFactor * 0.15);
 
-                currentCamHeight += (targetH - currentCamHeight) * 2.0 * dt;
-                currentCamDist += (targetD - currentCamDist) * 2.0 * dt;
+                currentCamHeight += (targetH - currentCamHeight) * 3.0 * dt; // Lerp un poco más rápido pero suave
+                currentCamDist += (targetD - currentCamDist) * 3.0 * dt;
 
                 if(player.position.y < -500) {
                     isGameActive = false; fadeOutMusic();
@@ -763,12 +767,13 @@
                 const camOff = new THREE.Vector3(0, currentCamHeight, currentCamDist);
                 camOff.applyAxisAngle(new THREE.Vector3(0,1,0), player.rotation.y);
                 const target = player.position.clone().add(camOff);
-                const lerp = 1 - Math.exp(-10 * dt); 
+                // Lerp más suave para la posición de la cámara
+                const lerp = 1 - Math.exp(-8 * dt); 
                 camera.position.lerp(target, lerp);
                 
-                // LookAt dinámico y suave sin ternarios (evita saltos)
+                // LookAt suavizado
                 const extraHeight = Math.max(0, currentCamHeight - CONFIG.cameraHeight);
-                const lookDownOffset = -extraHeight * 0.5; 
+                const lookDownOffset = -extraHeight * 0.6; 
 
                 const lookTarget = player.position.clone().add(new THREE.Vector3(0, lookDownOffset, -30).applyAxisAngle(new THREE.Vector3(0,1,0), player.rotation.y));
                 camera.lookAt(lookTarget);
