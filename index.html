@@ -33,28 +33,25 @@
             pointer-events: auto;
             display: flex; flex-direction: column; align-items: center;
             box-sizing: border-box;
-            padding-top: 10px;
+            padding-top: 15px;
         }
 
         .selector-header { 
             text-align: center; flex-shrink: 0; margin-bottom: 15px; width: 100%;
             display: flex; flex-direction: column; align-items: center; gap: 10px;
             padding: 0 10px;
-            background: #050505;
-            z-index: 5;
-            border-bottom: 1px solid #222;
-            padding-bottom: 15px;
+            background: linear-gradient(to bottom, #050505 0%, transparent 100%);
         }
         
         .selector-header h1 {
             margin: 0; color: #ff4400; font-style: italic; text-transform: uppercase; font-size: 36px; letter-spacing: 3px;
             text-shadow: 0 0 20px rgba(255, 68, 0, 0.6);
-            line-height: 1.2;
+            line-height: 1;
         }
 
         .settings-panel {
             display: flex; align-items: center; gap: 10px;
-            background: rgba(20, 20, 20, 0.8); padding: 6px 15px; border-radius: 20px;
+            background: rgba(20, 20, 20, 0.8); padding: 4px 12px; border-radius: 20px;
             border: 1px solid #333; pointer-events: auto;
         }
         .settings-label { color: #aaa; font-size: 12px; font-weight: bold; text-transform: uppercase; }
@@ -63,60 +60,87 @@
             border-radius: 4px; padding: 2px 8px; font-family: inherit; font-size: 12px;
             cursor: pointer; outline: none;
         }
-        
-        /* Contenedor con Scroll */
-        .level-scroll-area {
+
+        .level-grid-container {
             flex: 1; width: 100%; overflow-y: auto; 
-            padding: 10px 20px 80px 20px;
-            box-sizing: border-box; 
+            padding: 5px 20px 80px 20px;
+            box-sizing: border-box; display: flex; justify-content: center;
             -webkit-overflow-scrolling: touch;
-            display: flex; justify-content: center;
         }
 
-        /* GRID UNIFICADO */
         .level-grid {
             display: grid; 
-            grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
-            gap: 15px; 
-            width: 100%;
-            max-width: 1200px;
+            grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+            gap: 25px; 
+            row-gap: 45px;
+            width: 100%; max-width: 1100px;
+            padding-bottom: 40px;
         }
 
         .level-card {
-            background: #111; border-radius: 8px; overflow: hidden; cursor: pointer;
+            background: #111; border-radius: 10px; overflow: hidden; cursor: pointer;
             transition: transform 0.15s, border-color 0.15s, box-shadow 0.15s; 
             display: flex; flex-direction: column; position: relative; 
             border: 1px solid #222; 
             aspect-ratio: 16 / 9; 
-            min-height: 80px;
+            min-height: 120px;
             box-shadow: 0 4px 10px rgba(0,0,0,0.5);
         }
         
         .level-card:hover, .level-card:active { 
-            transform: translateY(-3px); border-color: #ff8800; 
-            box-shadow: 0 5px 20px rgba(255, 100, 0, 0.4); z-index: 10; 
+            transform: translateY(-2px); border-color: #ff8800; 
+            box-shadow: 0 5px 20px rgba(255, 100, 0, 0.2); z-index: 10; 
         }
-        
+
         .card-image { width: 100%; height: 100%; object-fit: cover; opacity: 0.8; transition: opacity 0.2s; }
         .level-card:hover .card-image { opacity: 1; }
 
-        .card-num {
-            position: absolute; top: 5px; left: 8px; font-size: 20px; font-weight: 900; 
-            color: rgba(255,255,255,0.3); z-index: 1; font-style: italic;
+        .card-badge {
+            position: absolute; top: 8px; right: 8px; background: rgba(0,0,0,0.85);
+            color: #fff; padding: 3px 6px; border-radius: 4px; font-size: 10px; font-weight: 900;
+            text-transform: uppercase; border: 1px solid currentColor; z-index: 3;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.8);
         }
+        
+        .diff-Easy { color: #00ff88; border-color: #00ff88; }
+        .diff-Medium { color: #ffcc00; border-color: #ffcc00; }
+        .diff-Hard { color: #ff3333; border-color: #ff3333; }
+        .diff-Insane { color: #bf00ff; border-color: #bf00ff; }
+        .diff-Expert { color: #00ccff; border-color: #00ccff; }
+        .diff-Master { color: #ff0099; border-color: #ff0099; }
+        .diff-Godlike { color: #ffffff; border-color: #ffffff; box-shadow: 0 0 8px #ff0000; text-shadow: 0 0 5px #ff0000; }
 
         .card-title-overlay {
-            position: absolute; bottom: 6px; left: 8px; color: #fff; 
-            font-size: 13px; font-weight: 700;
-            z-index: 3; max-width: 95%; 
+            position: absolute; bottom: 8px; left: 10px; color: #fff; 
+            font-size: 15px; font-weight: 800; letter-spacing: 0.5px;
+            z-index: 3; max-width: 90%; 
             white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
             text-shadow: 0 2px 4px rgba(0,0,0,1);
         }
         
         .card-gradient {
-            position: absolute; bottom: 0; left: 0; width: 100%; height: 100%;
-            background: linear-gradient(to top, rgba(0,0,0,0.9) 0%, rgba(0,0,0,0.1) 100%); 
+            position: absolute; bottom: 0; left: 0; width: 100%; height: 80%;
+            background: linear-gradient(to top, rgba(0,0,0,0.95) 0%, rgba(0,0,0,0.5) 50%, transparent 100%); 
             pointer-events: none; z-index: 2;
+        }
+
+        @media (max-width: 768px) {
+            .level-grid {
+                grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); 
+                gap: 15px;
+                row-gap: 35px;
+            }
+            .selector-header h1 { font-size: 28px; }
+            .card-title-overlay { font-size: 13px; bottom: 6px; left: 8px; }
+            .card-badge { font-size: 9px; padding: 2px 4px; top: 5px; right: 5px; }
+            .settings-panel { padding: 2px 10px; }
+        }
+        
+        @media (max-height: 500px) {
+            #level-selector { padding-top: 5px; }
+            .selector-header { margin-bottom: 5px; flex-direction: row; justify-content: center; gap: 20px; }
+            .selector-header h1 { font-size: 24px; }
+            .level-grid-container { padding-bottom: 20px; }
         }
 
         /* --- HUD & MODALES --- */
@@ -207,10 +231,8 @@
                     </select>
                 </div>
             </div>
-            <div class="level-scroll-area">
-                <div id="main-grid" class="level-grid">
-                    <!-- Niveles generados aquí -->
-                </div>
+            <div class="level-grid-container">
+                <div class="level-grid" id="grid-container"></div>
             </div>
         </div>
 
@@ -230,14 +252,66 @@
 
         <div id="level-complete" class="modal-screen win-style hidden">
             <h2 style="color: #00ff00; margin:0; font-size: 32px;">¡NIVEL COMPLETADO!</h2>
-            <p style="color:#bbb; margin:5px 0 20px 0; font-size: 14px;">Bien hecho</p>
+            <p style="color:#bbb; margin:5px 0 20px 0; font-size: 14px;">Buen trabajo</p>
             <button class="action-btn" onclick="nextLevel()">Siguiente</button>
             <button class="secondary-btn" onclick="showMenu()">Menú Principal</button>
         </div>
     </div>
 
     <script>
-        // --- CONFIGURACIÓN DE JUEGO ---
+        // --- CONSTANTES ---
+        const _ = {
+            S: (len) => ({ t:'S', len }),
+            T: (dir, f, len) => ({ t:'T', dir, f, len }), 
+            V: (slope, len) => ({ t:'V', s:slope, len })
+        };
+
+        // --- NIVELES (DATOS REVISADOS) ---
+        const LEVELS = [
+            // 1-5: Tutorial / Easy - Pocos obstáculos, estáticos
+            { id:1, name:"Space Walk", diff:"Easy", theme: { floor:0xaaaaaa, fog:0x000010, obs:0x00ffff, shape:'box', filter:'#00ffff' }, data: [_.S(80), _.T(-1, 0.3, 60), _.S(60), _.T(1, 0.3, 60), _.S(100)] },
+            { id:2, name:"Candy Land", diff:"Easy", theme: { floor:0xffdddd, fog:0x330011, obs:0xff00aa, shape:'cylinder', filter:'#ff00aa' }, data: [_.S(60), _.T(1, 0.5, 80), _.S(40), _.T(-1, 0.5, 80), _.S(120)] },
+            { id:3, name:"Toxic Waste", diff:"Easy", theme: { floor:0xddffdd, fog:0x002200, obs:0x00ff00, shape:'box', filter:'#00ff00' }, data: [_.S(40), _.V(0.2, 100), _.S(40), _.T(-1, 0.5, 60), _.V(0.2, 100), _.S(80)] },
+            { id:4, name:"Solar", diff:"Medium", theme: { floor:0xffffcc, fog:0x221100, obs:0xffaa00, shape:'cone', filter:'#ffaa00' }, data: [_.S(40), _.T(1, 0.8, 40), _.T(-1, 0.8, 40), _.T(1, 0.8, 40), _.T(-1, 0.8, 40), _.S(80)] },
+            { id:5, name:"Hyper Speed", diff:"Medium", theme: { floor:0xccccff, fog:0x000033, obs:0x4444ff, shape:'cylinder', filter:'#4444ff' }, data: [_.S(150), _.T(-1, 0.2, 100), _.S(200)] },
+            
+            // 6-10: Medium / Hard - Más densidad
+            { id:6, name:"Deep Sea", diff:"Medium", theme: { floor:0xaaffff, fog:0x001122, obs:0x00aaaa, shape:'box', filter:'#00aaaa' }, data: [_.S(40), _.V(0.1, 80), _.S(40), _.V(-0.1, 80), _.S(80)] },
+            { id:7, name:"Red Alert", diff:"Hard", theme: { floor:0xffaaaa, fog:0x330000, obs:0xff0000, shape:'cone', filter:'#ff0000' }, data: [_.S(40), _.V(-0.3, 150), _.S(80), _.T(1, 0.4, 80), _.S(100)] },
+            { id:8, name:"Jungle", diff:"Hard", theme: { floor:0xaaffaa, fog:0x002211, obs:0x008844, shape:'cylinder', filter:'#00ff44' }, data: [_.S(60), _.T(1, 1.0, 30), _.T(-1, 1.0, 30), _.T(1, 1.0, 30), _.T(-1, 1.0, 30), _.S(100)] },
+            { id:9, name:"Whiteout", diff:"Hard", theme: { floor:0xffffff, fog:0x888888, obs:0x222222, shape:'box', filter:'#ffffff' }, data: [_.S(40), _.T(1, 1.0, 80), _.S(20), _.T(-1, 1.0, 80), _.S(60)] },
+            { id:10, name:"Void", diff:"Insane", theme: { floor:0x666666, fog:0x000000, obs:0xaa00ff, shape:'cone', filter:'#aa00ff' }, data: [_.V(0.3, 60), _.V(-0.3, 60), _.T(1, 0.8, 60), _.V(0.3, 60), _.V(-0.3, 60), _.S(80)] },
+            
+            // 11-15: Insane / Expert - Alta densidad
+            { id:11, name:"Rusty", diff:"Insane", theme: { floor:0xddbb99, fog:0x221105, obs:0x884400, shape:'cylinder', filter:'#ff8800' }, data: [_.S(40), _.T(1, 0.5, 300), _.S(80)] },
+            { id:12, name:"Neon Nights", diff:"Insane", theme: { floor:0x333333, fog:0x110022, obs:0xff00ff, shape:'box', filter:'#ff00ff' }, data: [_.S(40), _.T(-1, 1.2, 80), _.S(40), _.T(1, 1.2, 80), _.S(80)] },
+            { id:13, name:"Glacier", diff:"Expert", theme: { floor:0xddeeff, fog:0x223344, obs:0x0088ff, shape:'cone', filter:'#0088ff' }, data: [_.S(40), _.T(1, 1.5, 40), _.V(-0.2, 120), _.T(-1, 1.5, 40), _.S(80)] },
+            { id:14, name:"Matrix", diff:"Expert", theme: { floor:0x000000, fog:0x002200, obs:0x00ff00, shape:'box', filter:'#00ff00' }, data: [_.S(40), _.T(-1, 1.8, 40), _.T(1, 1.8, 40), _.V(0.4, 60), _.T(-1, 1.5, 80), _.S(120)] },
+            { id:15, name:"The End", diff:"Expert", theme: { floor:0x222222, fog:0x111111, obs:0xffffff, shape:'cylinder', filter:'#aaaaaa' }, data: [_.S(40), _.V(-0.4, 100), _.T(1, 1.5, 60), _.V(0.4, 100), _.T(-1, 1.5, 60), _.S(150)] },
+            
+            // 16-20: HARD (Revisados)
+            { id:16, name:"Nebula", diff:"Hard", theme: { floor:0x220022, fog:0x110033, obs:0x00ffff, shape:'box', filter:'#ff00ff' }, data: [_.S(60), _.T(1, 2.0, 40), _.V(0.5, 80), _.T(-1, 2.0, 40), _.S(80)] },
+            { id:17, name:"Asteroid", diff:"Hard", theme: { floor:0x443322, fog:0x111111, obs:0x888888, shape:'cone', filter:'#aa5500' }, data: [_.V(-0.5, 100), _.T(1, 1.0, 20), _.T(-1, 1.0, 20), _.T(1, 1.0, 20), _.S(100)] },
+            { id:18, name:"Cyberpunk", diff:"Hard", theme: { floor:0x001122, fog:0x000022, obs:0xffff00, shape:'box', filter:'#ffff00' }, data: [_.S(40), _.T(1, 2.5, 40), _.V(-0.2, 50), _.T(-1, 2.5, 40), _.S(60)] },
+            { id:19, name:"Black Hole", diff:"Hard", theme: { floor:0x111111, fog:0x050505, obs:0x5500aa, shape:'cylinder', filter:'#5500aa' }, data: [_.S(40), _.T(-1, 3.0, 20), _.T(1, 3.0, 20), _.V(0.6, 80), _.S(80)] },
+            { id:20, name:"Horizon", diff:"Hard", theme: { floor:0xffffff, fog:0xffeecc, obs:0xffaa00, shape:'box', filter:'#ffaa00' }, data: [_.S(200), _.V(0.1, 200), _.S(200)] },
+
+            // 21-25: INSANE / EXPERT
+            { id:21, name:"Magma Core", diff:"Insane", theme: { floor:0x330000, fog:0x1a0000, obs:0xff4400, shape:'cone', filter:'#ff4400' }, data: [_.S(50), _.V(-0.4, 80), _.S(20), _.V(-0.4, 80), _.T(1, 1.5, 50), _.T(-1, 1.5, 50), _.S(100)] },
+            { id:22, name:"Serpent", diff:"Insane", theme: { floor:0x003300, fog:0x001100, obs:0x00ff44, shape:'cylinder', filter:'#00ff44' }, data: [_.S(40), _.T(1, 1.0, 20), _.T(-1, 1.0, 20), _.T(1, 1.0, 20), _.T(-1, 1.0, 20), _.T(1, 1.0, 20), _.T(-1, 1.0, 20), _.S(80)] },
+            { id:23, name:"Sky High", diff:"Expert", theme: { floor:0xeeffff, fog:0xccffff, obs:0x0088ff, shape:'box', filter:'#00aaff' }, data: [_.V(0.5, 200), _.S(20), _.T(1, 2.5, 40), _.V(-0.5, 200), _.S(50)] },
+            { id:24, name:"Nightmare", diff:"Expert", theme: { floor:0x110011, fog:0x050005, obs:0xff0000, shape:'cone', filter:'#550000' }, data: [_.S(40), _.T(1, 3.0, 30), _.T(-1, 3.0, 30), _.V(-0.3, 100), _.T(1, 2.5, 50), _.S(120)] },
+            { id:25, name:"Quantum", diff:"Master", theme: { floor:0x222233, fog:0x000011, obs:0xffffff, shape:'box', filter:'#ffffff' }, data: [_.S(60), _.V(0.4, 100), _.T(-1, 3.0, 40), _.V(-0.4, 100), _.T(1, 3.0, 40), _.S(200)] },
+
+            // 26-30: GODLIKE
+            { id:26, name:"Omega", diff:"Godlike", theme: { floor:0x000000, fog:0x000000, obs:0xff00ff, shape:'cylinder', filter:'#ff00ff' }, data: [_.S(100), _.T(1, 1.0, 200), _.T(-1, 1.0, 200), _.S(150)] },
+            { id:27, name:"Inferno", diff:"Godlike", theme: { floor:0x440000, fog:0x220000, obs:0xffaa00, shape:'cone', filter:'#ff2200' }, data: [_.V(-0.6, 150), _.T(1, 3.5, 30), _.V(0.6, 150), _.T(-1, 3.5, 30), _.S(100)] },
+            { id:28, name:"Zenith", diff:"Godlike", theme: { floor:0xffffee, fog:0xffffff, obs:0x444444, shape:'box', filter:'#ffffaa' }, data: [_.S(50), _.T(1, 2.0, 30), _.T(-1, 2.0, 30), _.V(0.2, 300), _.S(50)] },
+            { id:29, name:"Abyss", diff:"Godlike", theme: { floor:0x050505, fog:0x020202, obs:0x333333, shape:'box', filter:'#111111' }, data: [_.S(50), _.V(-0.7, 250), _.T(1, 4.0, 40), _.S(200)] },
+            { id:30, name:"Firedodo", diff:"Godlike", theme: { floor:0xff4400, fog:0x220000, obs:0xffff00, shape:'cylinder', filter:'#ff4400' }, data: [_.S(100), _.T(-1, 2.0, 50), _.V(0.5, 100), _.T(1, 2.0, 50), _.V(-0.5, 100), _.T(-1, 3.0, 50), _.S(300)] }
+        ];
+
+        // --- CONFIGURACIÓN ---
         const CONFIG = {
             speed: 90.0,
             turnSpeed: 4.0,
@@ -247,100 +321,25 @@
             cameraHeight: 18
         };
 
-        // --- TEMÁTICAS VISUALES (Sin afectar la jugabilidad) ---
-        const THEMES = [
-            { name: "Inicio",   theme: { floor:0xaaaaaa, fog:0x000010, obs:0x00ffff, shape:'box', filter:'#00ffff' } },
-            { name: "Neón",     theme: { floor:0x220022, fog:0x110033, obs:0xff00ff, shape:'cylinder', filter:'#ff00ff' } },
-            { name: "Tóxico",   theme: { floor:0x001100, fog:0x002200, obs:0x00ff00, shape:'box', filter:'#00ff00' } },
-            { name: "Hielo",    theme: { floor:0xddeeff, fog:0x223344, obs:0x0088ff, shape:'cone', filter:'#0088ff' } },
-            { name: "Magma",    theme: { floor:0x111111, fog:0x050000, obs:0xff4400, shape:'cylinder', filter:'#ff4400' } }
-        ];
-
-        const TOTAL_LEVELS = 75;
-        let LEVELS = []; 
-
-        // --- GENERADOR DE NIVELES "ROLLERCOASTER" ---
-        const _ = {
-            S: (len) => ({ t:'S', len }),
-            T: (dir, f, len) => ({ t:'T', dir, f, len }), 
-            V: (slope, len) => ({ t:'V', s:slope, len })
-        };
-
-        function generateAllLevels() {
-            LEVELS = [];
-            
-            for(let i=0; i<TOTAL_LEVELS; i++) {
-                // Calcular temática cíclica (cada 15 niveles cambia)
-                const themeIdx = Math.floor(i / 15) % THEMES.length;
-                const theme = THEMES[themeIdx].theme;
-                
-                const progress = i / TOTAL_LEVELS; 
-                
-                // Longitud CAPADA: No niveles infinitos
-                const segments = 12 + Math.floor(Math.min(i, 30) * 0.4); 
-
-                const data = [_.S(40)]; // Salida segura
-                
-                let lastDir = 0; 
-
-                for(let s=0; s<segments; s++) {
-                    const r = Math.random();
-                    const segLen = 40 + (Math.random() * 30); 
-                    
-                    // --- LÓGICA DE DISEÑO ---
-                    if (i < 3) { 
-                        // NIVELES 1-3: PURO MANEJO (Sin rectas aburridas, curvas suaves)
-                        const dir = (s % 2 === 0) ? 1 : -1; 
-                        data.push(_.T(dir, 0.3, segLen));
-                    } 
-                    else {
-                        // RESTO: GEOMETRÍA DIVERTIDA
-                        if (r < 0.2) { // Recta (Solo 20%)
-                            data.push(_.S(segLen));
-                        } else if (r < 0.6) { // Curvas (40%)
-                            let dir = Math.random() > 0.5 ? 1 : -1;
-                            if (Math.random() < 0.3) dir = -lastDir; 
-                            lastDir = dir;
-                            
-                            const force = 0.5 + (progress * 1.5); 
-                            data.push(_.T(dir, force, segLen));
-                        } else { // Pendientes (40%) - Rollercoaster
-                            const slope = (Math.random() > 0.5 ? 0.3 : -0.3) * (0.8 + progress * 0.5);
-                            data.push(_.V(slope, segLen));
-                            data.push(_.T(Math.random() > 0.5 ? 1:-1, 0.2, 20)); 
-                        }
-                    }
-                }
-                data.push(_.S(60)); // Meta
-
-                LEVELS.push({
-                    id: i + 1,
-                    name: `Nivel ${i + 1}`,
-                    theme: theme,
-                    data: data,
-                    difficultyVal: progress
-                });
-            }
-        }
-        generateAllLevels();
-
-        // --- VARIABLES GLOBALES ---
         let scene, camera, renderer, clock;
         let player, discMesh;
         let pathSegments = [], obstacles = [], particles = [];
         let isGameActive = false;
-        let currentLevelIdx = 0;
+        let currentLevel = 0;
         let playerVelY = 0;
         let input = { l: false, r: false };
         const raycaster = new THREE.Raycaster();
         const downVec = new THREE.Vector3(0, -1, 0);
+
         let maxFPS = 60; 
         let lastFrameTime = 0;
         let fadeInterval; 
 
         // --- AUDIO ---
         const bgm = new Audio('bgm.mp3');
-        bgm.loop = true; bgm.volume = 0.6;
+        bgm.loop = true;
+        bgm.volume = 0.6;
+
         const winSfx = new Audio('win.mp3');
         winSfx.volume = 0.8;
 
@@ -348,21 +347,27 @@
         textureLoader.crossOrigin = "Anonymous";
         const floorTexture = textureLoader.load('https://logise1.github.io/firedodo/assets/floor.png');
         const playerTexture = textureLoader.load('https://logise1.github.io/firedodo/assets/player.png');
-        floorTexture.wrapS = THREE.RepeatWrapping; floorTexture.wrapT = THREE.RepeatWrapping; floorTexture.repeat.set(1, 1);
+        
+        floorTexture.wrapS = THREE.RepeatWrapping;
+        floorTexture.wrapT = THREE.RepeatWrapping;
+        floorTexture.repeat.set(1, 1);
 
         const cubeLoader = new THREE.CubeTextureLoader();
         const skyboxTexture = cubeLoader.load([
-            'https://logise1.github.io/firedodo/assets/skybox/right.png', 'https://logise1.github.io/firedodo/assets/skybox/left.png',
-            'https://logise1.github.io/firedodo/assets/skybox/top.png', 'https://logise1.github.io/firedodo/assets/skybox/bottom.png',
-            'https://logise1.github.io/firedodo/assets/skybox/front.png', 'https://logise1.github.io/firedodo/assets/skybox/back.png'
+            'https://logise1.github.io/firedodo/assets/skybox/right.png',
+            'https://logise1.github.io/firedodo/assets/skybox/left.png',
+            'https://logise1.github.io/firedodo/assets/skybox/top.png',
+            'https://logise1.github.io/firedodo/assets/skybox/bottom.png',
+            'https://logise1.github.io/firedodo/assets/skybox/front.png',
+            'https://logise1.github.io/firedodo/assets/skybox/back.png'
         ]);
 
-        // --- INICIALIZACIÓN ---
         function init() {
             clock = new THREE.Clock();
             scene = new THREE.Scene();
+            
             scene.background = skyboxTexture;
-            scene.fog = new THREE.FogExp2(0x000000, 0.0015);
+            scene.fog = new THREE.FogExp2(0x000000, 0.001);
 
             camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 2000);
             renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: "high-performance" });
@@ -376,14 +381,17 @@
             const dl = new THREE.DirectionalLight(0xffffff, 1.0);
             dl.position.set(50, 100, 50);
             dl.castShadow = true;
-            dl.shadow.mapSize.set(1024, 1024);
+            dl.shadow.mapSize.set(2048, 2048);
             scene.add(dl);
 
             player = new THREE.Object3D();
             scene.add(player);
 
             const pGeo = new THREE.BoxGeometry(3, 1, 3);
-            const pMat = new THREE.MeshStandardMaterial({ map: playerTexture, transparent:true, opacity:1.0, roughness:0.1, metalness:0.8 });
+            const pMat = new THREE.MeshStandardMaterial({ 
+                map: playerTexture, transparent: true, opacity: 1.0,
+                roughness: 0.1, metalness: 0.8, side: THREE.DoubleSide
+            });
             discMesh = new THREE.Mesh(pGeo, pMat);
             discMesh.position.y = 0.5;
             discMesh.castShadow = true;
@@ -392,15 +400,51 @@
             setupInputs();
             createLevelMenu(); 
             
-            document.getElementById('fps-select').addEventListener('change', (e) => maxFPS = parseInt(e.target.value));
+            const fpsSelect = document.getElementById('fps-select');
+            fpsSelect.addEventListener('change', (e) => {
+                maxFPS = parseInt(e.target.value);
+            });
+
             requestAnimationFrame(animate);
         }
 
-        // --- MENÚ UNIFICADO ---
+        function playMusic() {
+            clearInterval(fadeInterval);
+            bgm.volume = 0.6; 
+            bgm.currentTime = 0;
+            bgm.play().catch(e => console.log("Audio autoplay blocked"));
+        }
+
+        function stopMusic() {
+            clearInterval(fadeInterval);
+            bgm.pause();
+            bgm.currentTime = 0;
+            bgm.volume = 0.6;
+        }
+
+        function fadeOutMusic() {
+            clearInterval(fadeInterval); 
+            let vol = bgm.volume;
+            fadeInterval = setInterval(() => {
+                if (vol > 0.05) {
+                    vol -= 0.05;
+                    bgm.volume = vol;
+                } else {
+                    bgm.pause();
+                    clearInterval(fadeInterval);
+                }
+            }, 100);
+        }
+
+        function playWinSound() {
+            stopMusic();
+            winSfx.currentTime = 0;
+            winSfx.play().catch(e => {});
+        }
+
         function createLevelMenu() {
-            const grid = document.getElementById('main-grid');
+            const grid = document.getElementById('grid-container');
             grid.innerHTML = ''; 
-            
             LEVELS.forEach((lvl, index) => {
                 const card = document.createElement('div');
                 card.className = 'level-card';
@@ -409,47 +453,67 @@
                 const img = document.createElement('img');
                 img.className = 'card-image';
                 const hexColor = lvl.theme.fog.toString(16).padStart(6, '0');
-                img.src = `https://placehold.co/300x160/${hexColor}/ffffff?text=%20`;
-                card.appendChild(img);
+                img.src = `https://placehold.co/400x250/${hexColor}/ffffff?text=%20`;
                 
-                const num = document.createElement('div');
-                num.className = 'card-num';
-                num.innerText = lvl.id;
-                card.appendChild(num);
-
+                const badge = document.createElement('div');
+                badge.className = `card-badge diff-${lvl.diff}`;
+                badge.innerText = lvl.diff;
+                
                 const title = document.createElement('div');
                 title.className = 'card-title-overlay';
                 title.innerText = lvl.name;
-                card.appendChild(title);
-
+                
                 const grad = document.createElement('div');
                 grad.className = 'card-gradient';
-                card.appendChild(grad);
-
+                
+                card.appendChild(img); 
+                card.appendChild(grad); 
+                card.appendChild(title); 
+                card.appendChild(badge);
                 grid.appendChild(card);
             });
         }
 
-        // --- JUEGO ---
-        function startLevel(idx) {
-            currentLevelIdx = idx;
-            try { document.documentElement.requestFullscreen().catch(()=>{}); } catch(e){}
-            document.getElementById('ui-layer').style.background = "transparent";
-            document.getElementById('level-selector').classList.add('hidden');
-            document.getElementById('game-over').classList.add('hidden');
-            document.getElementById('level-complete').classList.add('hidden');
-            document.getElementById('hud-container').style.display = 'block';
-            player.position.set(0, 0, 0);
-            player.rotation.set(0, 0, 0);
-            discMesh.rotation.set(0,0,0);
-            playerVelY = 0;
-            generateLevel3D(idx);
-            isGameActive = true;
-            clock.start();
-            playMusic();
+        function showMenu() {
+            isGameActive = false;
+            stopMusic();
+            document.querySelectorAll('.modal-screen').forEach(e => e.classList.add('hidden'));
+            document.getElementById('hud-container').style.display = 'none';
+            document.getElementById('ui-layer').style.background = "rgba(5, 5, 10, 0.98)";
+            document.getElementById('color-overlay').style.backgroundColor = "transparent";
+            document.getElementById('level-selector').classList.remove('hidden');
         }
 
-        function generateLevel3D(idx) {
+        function spawnParticle() {
+            const geo = new THREE.BoxGeometry(0.4, 0.4, 0.4);
+            const mat = new THREE.MeshBasicMaterial({ color: 0x00ffff, transparent: true, opacity: 0.8 });
+            const p = new THREE.Mesh(geo, mat);
+            p.position.copy(player.position);
+            p.position.x += (Math.random() - 0.5) * 2;
+            p.position.y += (Math.random() * 1); 
+            p.position.z += (Math.random() * 2) + 1; 
+            scene.add(p);
+            particles.push({ mesh: p, life: 1.0 });
+        }
+
+        function updateParticles(dt) {
+            for (let i = particles.length - 1; i >= 0; i--) {
+                const p = particles[i];
+                p.life -= dt * 2.0; 
+                p.mesh.position.z += dt * 20;
+                p.mesh.scale.setScalar(p.life);
+                p.mesh.material.opacity = p.life;
+                p.mesh.rotation.x += dt * 5;
+                if (p.life <= 0) {
+                    scene.remove(p.mesh);
+                    p.mesh.geometry.dispose();
+                    p.mesh.material.dispose();
+                    particles.splice(i, 1);
+                }
+            }
+        }
+
+        function generateLevel(idx) {
             pathSegments.forEach(m => scene.remove(m));
             obstacles.forEach(m => scene.remove(m));
             pathSegments = []; obstacles = [];
@@ -459,14 +523,18 @@
             const level = LEVELS[idx];
             const theme = level.theme;
 
-            document.getElementById('level-display').innerText = `Nivel ${level.id}`;
+            document.getElementById('level-display').innerText = `${level.id}. ${level.name}`;
 
             scene.fog.color.setHex(theme.fog);
             document.getElementById('color-overlay').style.backgroundColor = theme.filter;
             
-            const matFloor = new THREE.MeshStandardMaterial({ map: floorTexture, roughness: 0.4, color: theme.floor });
+            const matFloor = new THREE.MeshStandardMaterial({ 
+                map: floorTexture, roughness: 0.4, color: theme.floor 
+            });
             const matFinish = new THREE.MeshStandardMaterial({ color: 0x00ff00, emissive: 0x005500 });
-            const matObs = new THREE.MeshStandardMaterial({ color: theme.obs, emissive: theme.obs, emissiveIntensity: 0.5 });
+            const matObs = new THREE.MeshStandardMaterial({ 
+                color: theme.obs, emissive: theme.obs, emissiveIntensity: 0.5 
+            });
 
             let cursor = { pos: new THREE.Vector3(0, 0, 30), yaw: 0, pitch: 0 };
 
@@ -486,17 +554,23 @@
                 mesh.position.copy(midPos);
                 mesh.lookAt(endPos);
                 mesh.receiveShadow = true;
-                mesh.userData = { pitch: cursor.pitch }; 
+                mesh.userData = { pitch: cursor.pitch }; // Guardar el pitch para la cámara
                 if(isFinish) mesh.userData.isFinish = true;
+
                 scene.add(mesh);
                 pathSegments.push(mesh);
 
-                // --- OBSTÁCULOS MINIMIZADOS ---
-                // Niveles 1-4: CERO pinchos.
-                let obsChance = 0;
-                if (level.id > 4) {
-                    obsChance = 0.05 + (level.difficultyVal * 0.10); // Max 15%
-                }
+                // --- LÓGICA DE OBSTÁCULOS ---
+                let obsChance = 0.0;
+                // Nota: Eliminada variable 'canMove' para que los obstáculos ya no se muevan
+
+                if (level.diff === "Easy") obsChance = 0.02;
+                else if (level.diff === "Medium") obsChance = 0.05;
+                else if (level.diff === "Hard") { obsChance = 0.10; }
+                else if (level.diff === "Insane") { obsChance = 0.15; }
+                else if (level.diff === "Expert") { obsChance = 0.20; }
+                else if (level.diff === "Master") { obsChance = 0.25; }
+                else if (level.diff === "Godlike") { obsChance = 0.30; }
 
                 if(!isFinish && Math.random() < obsChance) {
                     let obsGeo;
@@ -516,6 +590,10 @@
                     obs.position.add(rightVec.multiplyScalar(offset));
                     obs.rotation.copy(mesh.rotation);
                     obs.castShadow = true;
+                    
+                    // Ya no asignamos movimiento a los obstáculos
+                    obs.userData = { moving: false };
+
                     scene.add(obs);
                     obstacles.push(obs);
                 }
@@ -525,7 +603,7 @@
                 cursor.pitch += dPitch;
             };
 
-            addSegment(60, 0, 0); // Inicio seguro
+            addSegment(60, 0, 0);
             level.data.forEach(item => {
                 const BASE_SEGMENT_LEN = 5; 
                 if(item.t === 'S') { 
@@ -545,75 +623,78 @@
                     cursor.pitch = 0; 
                 }
             });
-            addSegment(30, 0, 0, true); // Final
+            addSegment(30, 0, 0, true);
         }
 
-        // --- FUNCIONES JUEGO ---
-        function restartLevel() { stopMusic(); startLevel(currentLevelIdx); }
-        function showMenu() {
-            isGameActive = false; stopMusic();
-            document.querySelectorAll('.modal-screen').forEach(e => e.classList.add('hidden'));
-            document.getElementById('hud-container').style.display = 'none';
-            document.getElementById('ui-layer').style.background = "rgba(5, 5, 10, 0.98)";
-            document.getElementById('color-overlay').style.backgroundColor = "transparent";
-            document.getElementById('level-selector').classList.remove('hidden');
+        function startLevel(idx) {
+            currentLevel = idx;
+            try { document.documentElement.requestFullscreen().catch(()=>{}); } catch(e){}
+            document.getElementById('ui-layer').style.background = "transparent";
+            document.getElementById('level-selector').classList.add('hidden');
+            document.getElementById('game-over').classList.add('hidden');
+            document.getElementById('level-complete').classList.add('hidden');
+            document.getElementById('hud-container').style.display = 'block';
+            player.position.set(0, 0, 0);
+            player.rotation.set(0, 0, 0);
+            discMesh.rotation.set(0,0,0);
+            playerVelY = 0;
+            generateLevel(idx);
+            isGameActive = true;
+            clock.start();
+            playMusic();
         }
-        function nextLevel() {
-            if(currentLevelIdx < TOTAL_LEVELS - 1) startLevel(currentLevelIdx + 1);
-            else showMenu();
+
+        function restartLevel() { 
+            stopMusic(); 
+            startLevel(currentLevel); 
         }
         
-        function spawnParticle() {
-            const geo = new THREE.BoxGeometry(0.4, 0.4, 0.4);
-            const mat = new THREE.MeshBasicMaterial({ color: 0x00ffff, transparent: true, opacity: 0.8 });
-            const p = new THREE.Mesh(geo, mat);
-            p.position.copy(player.position);
-            p.position.x += (Math.random() - 0.5) * 2;
-            p.position.y += (Math.random() * 1); 
-            p.position.z += (Math.random() * 2) + 1; 
-            scene.add(p);
-            particles.push({ mesh: p, life: 1.0 });
+        function nextLevel() { 
+            if(currentLevel < LEVELS.length - 1) startLevel(currentLevel + 1);
+            else showMenu();
         }
 
-        // --- CONTROL DE MÚSICA ---
-        function playMusic() { clearInterval(fadeInterval); bgm.volume = 0.6; bgm.currentTime = 0; bgm.play().catch(e=>{}); }
-        function stopMusic() { clearInterval(fadeInterval); bgm.pause(); bgm.currentTime = 0; bgm.volume = 0.6; }
-        function fadeOutMusic() {
-            clearInterval(fadeInterval); let vol = bgm.volume;
-            fadeInterval = setInterval(() => {
-                if (vol > 0.05) { vol -= 0.05; bgm.volume = vol; } 
-                else { bgm.pause(); clearInterval(fadeInterval); }
-            }, 100);
-        }
-        function playWinSound() { stopMusic(); winSfx.currentTime = 0; winSfx.play().catch(e=>{}); }
-
-        // --- INPUTS ---
         function setupInputs() {
+            const l = document.getElementById('left-zone');
+            const r = document.getElementById('right-zone');
             const handle = (k, v) => { input[k] = v; };
-            const l = document.getElementById('left-zone'), r = document.getElementById('right-zone');
             l.addEventListener('touchstart', (e)=>{e.preventDefault(); handle('l',true);});
             l.addEventListener('touchend', (e)=>{e.preventDefault(); handle('l',false);});
             r.addEventListener('touchstart', (e)=>{e.preventDefault(); handle('r',true);});
             r.addEventListener('touchend', (e)=>{e.preventDefault(); handle('r',false);});
-            l.addEventListener('mousedown', ()=>handle('l',true)); l.addEventListener('mouseup', ()=>handle('l',false));
-            r.addEventListener('mousedown', ()=>handle('r',true)); r.addEventListener('mouseup', ()=>handle('r',false));
-            window.addEventListener('keydown', (e) => { if(e.key==='ArrowLeft'||e.key==='a') handle('l',true); if(e.key==='ArrowRight'||e.key==='d') handle('r',true); });
-            window.addEventListener('keyup', (e) => { if(e.key==='ArrowLeft'||e.key==='a') handle('l',false); if(e.key==='ArrowRight'||e.key==='d') handle('r',false); });
+            l.addEventListener('mousedown', ()=>handle('l',true));
+            l.addEventListener('mouseup', ()=>handle('l',false));
+            r.addEventListener('mousedown', ()=>handle('r',true));
+            r.addEventListener('mouseup', ()=>handle('r',false));
+            window.addEventListener('keydown', (e) => {
+                const k = e.key.toLowerCase();
+                if(k === 'arrowleft' || k === 'a') handle('l', true);
+                if(k === 'arrowright' || k === 'd') handle('r', true);
+            });
+            window.addEventListener('keyup', (e) => {
+                const k = e.key.toLowerCase();
+                if(k === 'arrowleft' || k === 'a') handle('l', false);
+                if(k === 'arrowright' || k === 'd') handle('r', false);
+            });
         }
 
-        // --- BUCLE PRINCIPAL ---
+        // --- VARIABLES DE CÁMARA ---
         let currentCamHeight = CONFIG.cameraHeight;
         let currentCamDist = CONFIG.cameraDist;
+        let currentPitchOffset = 0;
 
         function animate(timestamp) {
             requestAnimationFrame(animate);
+
             if (maxFPS !== 0) {
                 const frameInterval = 1000 / maxFPS;
                 const elapsed = timestamp - lastFrameTime;
                 if (elapsed < frameInterval) return;
                 lastFrameTime = timestamp - (elapsed % frameInterval);
             }
+
             const dt = Math.min(clock.getDelta(), 0.1);
+            const time = clock.getElapsedTime();
 
             if(isGameActive) {
                 const turn = CONFIG.turnSpeed * dt;
@@ -624,15 +705,18 @@
                 playerVelY -= CONFIG.gravity * dt;
                 player.position.y += playerVelY * dt;
 
-                const rayPos = player.position.clone(); rayPos.y += 20; 
+                // RAYCAST
+                const rayPos = player.position.clone();
+                rayPos.y += 20; 
                 raycaster.set(rayPos, downVec);
                 const hits = raycaster.intersectObjects(pathSegments);
-                
-                let currentSlope = 0;
+
+                let currentSlope = 0; // Pendiente actual
 
                 if(hits.length > 0) {
                     const hit = hits[0];
-                    currentSlope = hit.object.userData.pitch || 0;
+                    currentSlope = hit.object.userData.pitch || 0; // Recuperar pitch del segmento
+                    
                     const distToFloor = hit.distance - 20; 
                     if(distToFloor < 5 && distToFloor > -8) { 
                         player.position.y = hit.point.y;
@@ -645,16 +729,25 @@
                     }
                 }
 
-                // Cámara Dinámica Suave
-                const slopeFactor = Math.max(0, -currentSlope * 120); 
-                const targetH = CONFIG.cameraHeight + slopeFactor;
-                const targetD = CONFIG.cameraDist - (slopeFactor * 0.15);
+                // --- LÓGICA CÁMARA EN BAJADAS ---
+                // Definimos la posición normal
+                let targetH = CONFIG.cameraHeight;
+                let targetD = CONFIG.cameraDist;
+                
+                // MODIFICADO: Si la pendiente es muy pronunciada hacia abajo (bajada fuerte)
+                // Movemos la cámara para que esté "encima" (alto H, bajo D)
+                if (currentSlope < -0.2) {
+                    targetH = CONFIG.cameraHeight + 40; // Subir mucho la cámara (vista pájaro)
+                    targetD = 12;                       // Acercar en Z para estar casi encima
+                }
 
-                currentCamHeight += (targetH - currentCamHeight) * 3.0 * dt; 
-                currentCamDist += (targetD - currentCamDist) * 3.0 * dt;
+                // Suavizado de cámara (Lerp)
+                currentCamHeight += (targetH - currentCamHeight) * 2.5 * dt;
+                currentCamDist += (targetD - currentCamDist) * 2.5 * dt;
 
                 if(player.position.y < -500) {
-                    isGameActive = false; fadeOutMusic();
+                    isGameActive = false;
+                    fadeOutMusic();
                     document.getElementById('fail-reason').innerText = "Caída al vacío";
                     document.getElementById('game-over').classList.remove('hidden');
                 }
@@ -662,35 +755,42 @@
                 discMesh.rotation.y += 10.0 * dt; 
                 spawnParticle();
                 
+                // --- ACTUALIZAR OBSTÁCULOS (YA NO SE MUEVEN) ---
                 for(let o of obstacles) {
+                    // Se ha eliminado el código de movimiento
+
                     if(player.position.distanceToSquared(o.position) < 15) {
-                        isGameActive = false; fadeOutMusic();
+                        isGameActive = false;
+                        fadeOutMusic();
                         document.getElementById('fail-reason').innerText = "¡Choque!";
                         document.getElementById('game-over').classList.remove('hidden');
                     }
                 }
             }
             
-            // Partículas
-            for (let i = particles.length - 1; i >= 0; i--) {
-                const p = particles[i]; p.life -= dt * 2.0; 
-                p.mesh.position.z += dt * 20; p.mesh.scale.setScalar(p.life);
-                p.mesh.material.opacity = p.life; p.mesh.rotation.x += dt * 5;
-                if (p.life <= 0) { scene.remove(p.mesh); p.mesh.geometry.dispose(); p.mesh.material.dispose(); particles.splice(i, 1); }
-            }
+            updateParticles(dt);
 
             if(player) {
+                // Usar las variables dinámicas de cámara
                 const camOff = new THREE.Vector3(0, currentCamHeight, currentCamDist);
                 camOff.applyAxisAngle(new THREE.Vector3(0,1,0), player.rotation.y);
                 const target = player.position.clone().add(camOff);
-                const lerp = 1 - Math.exp(-8 * dt); 
+                
+                const lerp = 1 - Math.exp(-10 * dt); 
                 camera.position.lerp(target, lerp);
                 
-                const extraHeight = Math.max(0, currentCamHeight - CONFIG.cameraHeight);
-                const lookDownOffset = -extraHeight * 0.6; 
-                const lookTarget = player.position.clone().add(new THREE.Vector3(0, lookDownOffset, -30).applyAxisAngle(new THREE.Vector3(0,1,0), player.rotation.y));
+                // MODIFICADO: LookAt
+                // Si la cámara está muy alta (modo bajada), miramos más "abajo" y hacia adelante
+                const isTopDown = (currentCamHeight > CONFIG.cameraHeight + 10);
+                const lookDownOffset = isTopDown ? -20 : 0; // Bajar el punto de mira en bajadas
+                const lookForwardDist = isTopDown ? -10 : -30; // Mirar menos lejos en bajadas (más al suelo)
+
+                const lookTarget = player.position.clone().add(
+                    new THREE.Vector3(0, lookDownOffset, lookForwardDist).applyAxisAngle(new THREE.Vector3(0,1,0), player.rotation.y)
+                );
                 camera.lookAt(lookTarget);
             }
+
             renderer.render(scene, camera);
         }
 
