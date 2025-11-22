@@ -1,0 +1,23 @@
+{
+  "name": "Firedodo Online",
+  "short_name": "Firedodo",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#050505",
+  "theme_color": "#ff4400",
+  "orientation": "landscape",
+  "icons": [
+    {
+      "src": "512.png",
+      "type": "image/png",
+      "sizes": "512x512",
+      "purpose": "any"
+    },
+    {
+      "src": "512.png",
+      "type": "image/png",
+      "sizes": "512x512",
+      "purpose": "maskable"
+    }
+  ]
+}
