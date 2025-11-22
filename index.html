@@ -3,7 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Firedodo</title>
+    <title>Firedodo Online</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <style>
         /* --- ESTILOS GENERALES --- */
         body { margin: 0; overflow: hidden; background-color: #050505; font-family: 'Segoe UI', Tahoma, sans-serif; touch-action: none; user-select: none; -webkit-user-select: none; }
@@ -27,13 +28,27 @@
             transition: background-color 1s;
         }
 
-        /* --- SELECTOR DE NIVELES --- */
+        /* --- TUTORIAL OVERLAY --- */
+        #tutorial-overlay {
+            position: absolute; top: 30%; width: 100%; text-align: center;
+            pointer-events: none; display: none; z-index: 95;
+        }
+        .tut-arrow {
+            font-size: 100px; color: white; font-weight: bold;
+            text-shadow: 0 0 20px #ff4400;
+            animation: pulse 0.5s infinite alternate;
+        }
+        .tut-text {
+            font-size: 24px; color: #fff; text-transform: uppercase; letter-spacing: 2px;
+            background: rgba(0,0,0,0.7); display: inline-block; padding: 10px 20px; border-radius: 10px;
+        }
+        @keyframes pulse { from { transform: scale(1); opacity: 0.8; } to { transform: scale(1.2); opacity: 1; } }
+
+        /* --- MENU DE NIVELES --- */
         #level-selector {
-            width: 100%; height: 100%;
-            pointer-events: auto;
+            width: 100%; height: 100%; pointer-events: auto;
             display: flex; flex-direction: column; align-items: center;
-            box-sizing: border-box;
-            padding-top: 15px;
+            box-sizing: border-box; padding-top: 15px;
         }
 
         .selector-header { 
@@ -45,8 +60,7 @@
         
         .selector-header h1 {
             margin: 0; color: #ff4400; font-style: italic; text-transform: uppercase; font-size: 36px; letter-spacing: 3px;
-            text-shadow: 0 0 20px rgba(255, 68, 0, 0.6);
-            line-height: 1;
+            text-shadow: 0 0 20px rgba(255, 68, 0, 0.6); line-height: 1;
         }
 
         .settings-panel {
@@ -71,19 +85,15 @@
         .level-grid {
             display: grid; 
             grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
-            gap: 25px; 
-            row-gap: 45px;
-            width: 100%; max-width: 1100px;
-            padding-bottom: 40px;
+            gap: 25px; row-gap: 45px;
+            width: 100%; max-width: 1100px; padding-bottom: 40px;
         }
 
         .level-card {
             background: #111; border-radius: 10px; overflow: hidden; cursor: pointer;
             transition: transform 0.15s, border-color 0.15s, box-shadow 0.15s; 
             display: flex; flex-direction: column; position: relative; 
-            border: 1px solid #222; 
-            aspect-ratio: 16 / 9; 
-            min-height: 120px;
+            border: 1px solid #222; aspect-ratio: 16 / 9; min-height: 120px;
             box-shadow: 0 4px 10px rgba(0,0,0,0.5);
         }
         
@@ -92,7 +102,7 @@
             box-shadow: 0 5px 20px rgba(255, 100, 0, 0.2); z-index: 10; 
         }
 
-        .card-image { width: 100%; height: 100%; object-fit: cover; opacity: 0.8; transition: opacity 0.2s; }
+        .card-image { width: 100%; height: 100%; object-fit: cover; opacity: 0.8; transition: opacity 0.2s; background: #222; }
         .level-card:hover .card-image { opacity: 1; }
 
         .card-badge {
@@ -102,6 +112,14 @@
             box-shadow: 0 2px 4px rgba(0,0,0,0.8);
         }
         
+        /* Record Label en la carta */
+        .card-record {
+            position: absolute; top: 8px; left: 8px; background: rgba(0,0,0,0.6);
+            color: #ffcc00; padding: 2px 6px; border-radius: 4px; font-size: 10px; font-weight: bold;
+            z-index: 3; border: 1px solid #554400;
+        }
+        
+        .diff-Tutorial { color: #ffffff; border-color: #ffffff; background: #0055ff; }
         .diff-Easy { color: #00ff88; border-color: #00ff88; }
         .diff-Medium { color: #ffcc00; border-color: #ffcc00; }
         .diff-Hard { color: #ff3333; border-color: #ff3333; }
@@ -124,39 +142,41 @@
             pointer-events: none; z-index: 2;
         }
 
-        @media (max-width: 768px) {
-            .level-grid {
-                grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); 
-                gap: 15px;
-                row-gap: 35px;
-            }
-            .selector-header h1 { font-size: 28px; }
-            .card-title-overlay { font-size: 13px; bottom: 6px; left: 8px; }
-            .card-badge { font-size: 9px; padding: 2px 4px; top: 5px; right: 5px; }
-            .settings-panel { padding: 2px 10px; }
+        /* --- GAME UI (HUD) --- */
+        #game-ui { 
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%; 
+            pointer-events: none; display: none; 
         }
         
-        @media (max-height: 500px) {
-            #level-selector { padding-top: 5px; }
-            .selector-header { margin-bottom: 5px; flex-direction: row; justify-content: center; gap: 20px; }
-            .selector-header h1 { font-size: 24px; }
-            .level-grid-container { padding-bottom: 20px; }
+        /* Botón Salir */
+        #btn-exit {
+            position: absolute; top: 20px; right: 20px; pointer-events: auto;
+            width: 40px; height: 40px; border-radius: 50%; background: rgba(255, 0, 0, 0.6);
+            border: 2px solid rgba(255,255,255,0.5); color: white; font-weight: bold; font-size: 20px;
+            display: flex; justify-content: center; align-items: center; cursor: pointer;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.3); transition: transform 0.1s;
+        }
+        #btn-exit:active { transform: scale(0.9); background: rgba(255,0,0,0.8); }
+
+        /* Barra de Progreso */
+        #progress-container {
+            position: absolute; top: 20px; left: 20px;
+            display: flex; flex-direction: column; align-items: flex-start; gap: 5px;
+        }
+        #progress-text {
+            font-size: 24px; font-weight: 900; color: #fff; 
+            text-shadow: 0 2px 4px rgba(0,0,0,0.8); font-style: italic;
+        }
+        #level-name-hud {
+            font-size: 12px; color: rgba(255,255,255,0.7); text-transform: uppercase;
         }
 
-        /* --- HUD & MODALES --- */
-        #hud-container { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; display: none; }
-        #level-display { 
-            position: absolute; top: 20px; left: 20px; 
-            font-size: 20px; font-weight: 800; color: #fff; 
-            text-shadow: 0 2px 4px #000;
-            background: rgba(0,0,0,0.5); padding: 5px 12px; border-radius: 20px;
-            border-left: 3px solid #ff8800;
-        }
         #controls-hint { 
             position: absolute; bottom: 20px; width: 100%; text-align: center; 
             font-size: 12px; color: rgba(255,255,255,0.4); text-transform: uppercase; letter-spacing: 1px; 
         }
 
+        /* --- MODALES --- */
         .modal-screen {
             position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
             background: rgba(15, 15, 20, 0.95); padding: 30px 50px; border-radius: 15px;
@@ -184,7 +204,6 @@
         }
         button.secondary-btn:hover { border-color: #777; color: #fff; }
 
-        /* --- CONTROLES --- */
         .control-zone { position: absolute; top: 0; height: 100%; width: 50%; z-index: 10; pointer-events: auto; }
         #left-zone { left: 0; }
         #right-zone { right: 0; }
@@ -196,12 +215,7 @@
             justify-content: center; align-items: center; flex-direction: column;
         }
         @media screen and (orientation: portrait) { #landscape-warning { display: flex; } }
-        
-        ::-webkit-scrollbar { width: 6px; }
-        ::-webkit-scrollbar-track { background: rgba(0,0,0,0.2); }
-        ::-webkit-scrollbar-thumb { background: #333; border-radius: 3px; }
     </style>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 </head>
 <body>
 
@@ -215,6 +229,10 @@
     <div id="right-zone" class="control-zone"></div>
 
     <div id="color-overlay"></div>
+    <div id="tutorial-overlay">
+        <div class="tut-arrow" id="tut-icon">←</div>
+        <div class="tut-text" id="tut-msg">PULSA IZQUIERDA</div>
+    </div>
 
     <div id="ui-layer">
         <!-- MENU -->
@@ -236,9 +254,15 @@
             </div>
         </div>
 
-        <!-- HUD -->
-        <div id="hud-container">
-            <div id="level-display">Nivel 1</div>
+        <!-- GAME HUD -->
+        <div id="game-ui">
+            <div id="progress-container">
+                <div id="progress-text">0%</div>
+                <div id="level-name-hud">Level 1</div>
+            </div>
+            
+            <div id="btn-exit" onclick="showMenu()">✕</div>
+
             <div id="controls-hint">Toque Lados para Girar</div>
         </div>
 
@@ -259,68 +283,69 @@
     </div>
 
     <script>
-        // --- CONSTANTES ---
-        const _ = {
-            S: (len) => ({ t:'S', len }),
-            T: (dir, f, len) => ({ t:'T', dir, f, len }), 
-            V: (slope, len) => ({ t:'V', s:slope, len })
-        };
+        // ======================================================
+        // GENERADOR DE TEXTURAS (CLIENT-SIDE)
+        // ======================================================
+        function createTexture(width, height, drawFn) {
+            const cvs = document.createElement('canvas');
+            cvs.width = width; cvs.height = height;
+            const ctx = cvs.getContext('2d');
+            drawFn(ctx, width, height);
+            return cvs.toDataURL();
+        }
 
-        // --- NIVELES (DATOS REVISADOS) ---
-        const LEVELS = [
-            // 1-5: Tutorial / Easy - Pocos obstáculos, estáticos
-            { id:1, name:"Space Walk", diff:"Easy", theme: { floor:0xaaaaaa, fog:0x000010, obs:0x00ffff, shape:'box', filter:'#00ffff' }, data: [_.S(80), _.T(-1, 0.3, 60), _.S(60), _.T(1, 0.3, 60), _.S(100)] },
-            { id:2, name:"Candy Land", diff:"Easy", theme: { floor:0xffdddd, fog:0x330011, obs:0xff00aa, shape:'cylinder', filter:'#ff00aa' }, data: [_.S(60), _.T(1, 0.5, 80), _.S(40), _.T(-1, 0.5, 80), _.S(120)] },
-            { id:3, name:"Toxic Waste", diff:"Easy", theme: { floor:0xddffdd, fog:0x002200, obs:0x00ff00, shape:'box', filter:'#00ff00' }, data: [_.S(40), _.V(0.2, 100), _.S(40), _.T(-1, 0.5, 60), _.V(0.2, 100), _.S(80)] },
-            { id:4, name:"Solar", diff:"Medium", theme: { floor:0xffffcc, fog:0x221100, obs:0xffaa00, shape:'cone', filter:'#ffaa00' }, data: [_.S(40), _.T(1, 0.8, 40), _.T(-1, 0.8, 40), _.T(1, 0.8, 40), _.T(-1, 0.8, 40), _.S(80)] },
-            { id:5, name:"Hyper Speed", diff:"Medium", theme: { floor:0xccccff, fog:0x000033, obs:0x4444ff, shape:'cylinder', filter:'#4444ff' }, data: [_.S(150), _.T(-1, 0.2, 100), _.S(200)] },
-            
-            // 6-10: Medium / Hard - Más densidad
-            { id:6, name:"Deep Sea", diff:"Medium", theme: { floor:0xaaffff, fog:0x001122, obs:0x00aaaa, shape:'box', filter:'#00aaaa' }, data: [_.S(40), _.V(0.1, 80), _.S(40), _.V(-0.1, 80), _.S(80)] },
-            { id:7, name:"Red Alert", diff:"Hard", theme: { floor:0xffaaaa, fog:0x330000, obs:0xff0000, shape:'cone', filter:'#ff0000' }, data: [_.S(40), _.V(-0.3, 150), _.S(80), _.T(1, 0.4, 80), _.S(100)] },
-            { id:8, name:"Jungle", diff:"Hard", theme: { floor:0xaaffaa, fog:0x002211, obs:0x008844, shape:'cylinder', filter:'#00ff44' }, data: [_.S(60), _.T(1, 1.0, 30), _.T(-1, 1.0, 30), _.T(1, 1.0, 30), _.T(-1, 1.0, 30), _.S(100)] },
-            { id:9, name:"Whiteout", diff:"Hard", theme: { floor:0xffffff, fog:0x888888, obs:0x222222, shape:'box', filter:'#ffffff' }, data: [_.S(40), _.T(1, 1.0, 80), _.S(20), _.T(-1, 1.0, 80), _.S(60)] },
-            { id:10, name:"Void", diff:"Insane", theme: { floor:0x666666, fog:0x000000, obs:0xaa00ff, shape:'cone', filter:'#aa00ff' }, data: [_.V(0.3, 60), _.V(-0.3, 60), _.T(1, 0.8, 60), _.V(0.3, 60), _.V(-0.3, 60), _.S(80)] },
-            
-            // 11-15: Insane / Expert - Alta densidad
-            { id:11, name:"Rusty", diff:"Insane", theme: { floor:0xddbb99, fog:0x221105, obs:0x884400, shape:'cylinder', filter:'#ff8800' }, data: [_.S(40), _.T(1, 0.5, 300), _.S(80)] },
-            { id:12, name:"Neon Nights", diff:"Insane", theme: { floor:0x333333, fog:0x110022, obs:0xff00ff, shape:'box', filter:'#ff00ff' }, data: [_.S(40), _.T(-1, 1.2, 80), _.S(40), _.T(1, 1.2, 80), _.S(80)] },
-            { id:13, name:"Glacier", diff:"Expert", theme: { floor:0xddeeff, fog:0x223344, obs:0x0088ff, shape:'cone', filter:'#0088ff' }, data: [_.S(40), _.T(1, 1.5, 40), _.V(-0.2, 120), _.T(-1, 1.5, 40), _.S(80)] },
-            { id:14, name:"Matrix", diff:"Expert", theme: { floor:0x000000, fog:0x002200, obs:0x00ff00, shape:'box', filter:'#00ff00' }, data: [_.S(40), _.T(-1, 1.8, 40), _.T(1, 1.8, 40), _.V(0.4, 60), _.T(-1, 1.5, 80), _.S(120)] },
-            { id:15, name:"The End", diff:"Expert", theme: { floor:0x222222, fog:0x111111, obs:0xffffff, shape:'cylinder', filter:'#aaaaaa' }, data: [_.S(40), _.V(-0.4, 100), _.T(1, 1.5, 60), _.V(0.4, 100), _.T(-1, 1.5, 60), _.S(150)] },
-            
-            // 16-20: HARD (Revisados)
-            { id:16, name:"Nebula", diff:"Hard", theme: { floor:0x220022, fog:0x110033, obs:0x00ffff, shape:'box', filter:'#ff00ff' }, data: [_.S(60), _.T(1, 2.0, 40), _.V(0.5, 80), _.T(-1, 2.0, 40), _.S(80)] },
-            { id:17, name:"Asteroid", diff:"Hard", theme: { floor:0x443322, fog:0x111111, obs:0x888888, shape:'cone', filter:'#aa5500' }, data: [_.V(-0.5, 100), _.T(1, 1.0, 20), _.T(-1, 1.0, 20), _.T(1, 1.0, 20), _.S(100)] },
-            { id:18, name:"Cyberpunk", diff:"Hard", theme: { floor:0x001122, fog:0x000022, obs:0xffff00, shape:'box', filter:'#ffff00' }, data: [_.S(40), _.T(1, 2.5, 40), _.V(-0.2, 50), _.T(-1, 2.5, 40), _.S(60)] },
-            { id:19, name:"Black Hole", diff:"Hard", theme: { floor:0x111111, fog:0x050505, obs:0x5500aa, shape:'cylinder', filter:'#5500aa' }, data: [_.S(40), _.T(-1, 3.0, 20), _.T(1, 3.0, 20), _.V(0.6, 80), _.S(80)] },
-            { id:20, name:"Horizon", diff:"Hard", theme: { floor:0xffffff, fog:0xffeecc, obs:0xffaa00, shape:'box', filter:'#ffaa00' }, data: [_.S(200), _.V(0.1, 200), _.S(200)] },
+        // Generador de Skybox configurable
+        function generateSkybox(c1, c2, starCount) {
+            const textures = [];
+            const drawSky = (ctx, w, h) => {
+                const grad = ctx.createLinearGradient(0,0,0,h);
+                grad.addColorStop(0, c1);
+                grad.addColorStop(1, c2);
+                ctx.fillStyle = grad; ctx.fillRect(0,0,w,h);
+                ctx.fillStyle = '#fff';
+                for(let i=0; i<starCount; i++) {
+                    ctx.globalAlpha = Math.random() * 0.8 + 0.2;
+                    const x = Math.random()*w;
+                    const y = Math.random()*h;
+                    const s = Math.random()*2;
+                    ctx.fillRect(x,y,s,s);
+                }
+            };
+            // Generamos 6 caras iguales (simple)
+            const dataUrl = createTexture(512, 512, drawSky);
+            for(let i=0; i<6; i++) textures.push(dataUrl);
+            return textures;
+        }
 
-            // 21-25: INSANE / EXPERT
-            { id:21, name:"Magma Core", diff:"Insane", theme: { floor:0x330000, fog:0x1a0000, obs:0xff4400, shape:'cone', filter:'#ff4400' }, data: [_.S(50), _.V(-0.4, 80), _.S(20), _.V(-0.4, 80), _.T(1, 1.5, 50), _.T(-1, 1.5, 50), _.S(100)] },
-            { id:22, name:"Serpent", diff:"Insane", theme: { floor:0x003300, fog:0x001100, obs:0x00ff44, shape:'cylinder', filter:'#00ff44' }, data: [_.S(40), _.T(1, 1.0, 20), _.T(-1, 1.0, 20), _.T(1, 1.0, 20), _.T(-1, 1.0, 20), _.T(1, 1.0, 20), _.T(-1, 1.0, 20), _.S(80)] },
-            { id:23, name:"Sky High", diff:"Expert", theme: { floor:0xeeffff, fog:0xccffff, obs:0x0088ff, shape:'box', filter:'#00aaff' }, data: [_.V(0.5, 200), _.S(20), _.T(1, 2.5, 40), _.V(-0.5, 200), _.S(50)] },
-            { id:24, name:"Nightmare", diff:"Expert", theme: { floor:0x110011, fog:0x050005, obs:0xff0000, shape:'cone', filter:'#550000' }, data: [_.S(40), _.T(1, 3.0, 30), _.T(-1, 3.0, 30), _.V(-0.3, 100), _.T(1, 2.5, 50), _.S(120)] },
-            { id:25, name:"Quantum", diff:"Master", theme: { floor:0x222233, fog:0x000011, obs:0xffffff, shape:'box', filter:'#ffffff' }, data: [_.S(60), _.V(0.4, 100), _.T(-1, 3.0, 40), _.V(-0.4, 100), _.T(1, 3.0, 40), _.S(200)] },
+        const Assets = { floor: null, player: null };
 
-            // 26-30: GODLIKE
-            { id:26, name:"Omega", diff:"Godlike", theme: { floor:0x000000, fog:0x000000, obs:0xff00ff, shape:'cylinder', filter:'#ff00ff' }, data: [_.S(100), _.T(1, 1.0, 200), _.T(-1, 1.0, 200), _.S(150)] },
-            { id:27, name:"Inferno", diff:"Godlike", theme: { floor:0x440000, fog:0x220000, obs:0xffaa00, shape:'cone', filter:'#ff2200' }, data: [_.V(-0.6, 150), _.T(1, 3.5, 30), _.V(0.6, 150), _.T(-1, 3.5, 30), _.S(100)] },
-            { id:28, name:"Zenith", diff:"Godlike", theme: { floor:0xffffee, fog:0xffffff, obs:0x444444, shape:'box', filter:'#ffffaa' }, data: [_.S(50), _.T(1, 2.0, 30), _.T(-1, 2.0, 30), _.V(0.2, 300), _.S(50)] },
-            { id:29, name:"Abyss", diff:"Godlike", theme: { floor:0x050505, fog:0x020202, obs:0x333333, shape:'box', filter:'#111111' }, data: [_.S(50), _.V(-0.7, 250), _.T(1, 4.0, 40), _.S(200)] },
-            { id:30, name:"Firedodo", diff:"Godlike", theme: { floor:0xff4400, fog:0x220000, obs:0xffff00, shape:'cylinder', filter:'#ff4400' }, data: [_.S(100), _.T(-1, 2.0, 50), _.V(0.5, 100), _.T(1, 2.0, 50), _.V(-0.5, 100), _.T(-1, 3.0, 50), _.S(300)] }
-        ];
+        function initAssets() {
+            Assets.floor = createTexture(512, 512, (ctx, w, h) => {
+                ctx.fillStyle = '#222'; ctx.fillRect(0,0,w,h);
+                ctx.strokeStyle = '#444'; ctx.lineWidth = 4;
+                for(let i=0; i<=4; i++) {
+                    let p = i * (w/4); ctx.moveTo(p, 0); ctx.lineTo(p, h); ctx.moveTo(0, p); ctx.lineTo(w, p);
+                }
+                ctx.stroke();
+                ctx.strokeStyle = '#fff'; ctx.lineWidth = 8; ctx.strokeRect(0,0,w,h);
+            });
 
-        // --- CONFIGURACIÓN ---
-        const CONFIG = {
-            speed: 90.0,
-            turnSpeed: 4.0,
-            gravity: 180.0,
-            pathWidth: 30,
-            cameraDist: 24,
-            cameraHeight: 18
-        };
+            Assets.player = createTexture(128, 128, (ctx, w, h) => {
+                ctx.fillStyle = '#ff6600'; ctx.fillRect(0,0,w,h);
+                ctx.fillStyle = '#fff'; 
+                ctx.beginPath(); ctx.arc(40, 40, 15, 0, Math.PI*2); ctx.fill();
+                ctx.beginPath(); ctx.arc(88, 40, 15, 0, Math.PI*2); ctx.fill();
+                ctx.fillStyle = '#000';
+                ctx.beginPath(); ctx.arc(40, 40, 5, 0, Math.PI*2); ctx.fill();
+                ctx.beginPath(); ctx.arc(88, 40, 5, 0, Math.PI*2); ctx.fill();
+                ctx.lineWidth = 6; ctx.beginPath(); ctx.arc(64, 80, 30, 0, Math.PI, false); ctx.stroke();
+                ctx.lineWidth = 10; ctx.strokeStyle = '#882200'; ctx.strokeRect(0,0,w,h);
+            });
+        }
 
+        // ======================================================
+        // LÓGICA DEL JUEGO
+        // ======================================================
         let scene, camera, renderer, clock;
         let player, discMesh;
         let pathSegments = [], obstacles = [], particles = [];
@@ -328,45 +353,104 @@
         let currentLevel = 0;
         let playerVelY = 0;
         let input = { l: false, r: false };
-        const raycaster = new THREE.Raycaster();
-        const downVec = new THREE.Vector3(0, -1, 0);
-
+        let raycaster, downVec; 
         let maxFPS = 60; 
         let lastFrameTime = 0;
-        let fadeInterval; 
+        let timeScale = 1.0;
+        let textureLoader, cubeLoader;
+        let floorTexture, playerTexture;
 
-        // --- AUDIO ---
-        const bgm = new Audio('bgm.mp3');
-        bgm.loop = true;
-        bgm.volume = 0.6;
+        let totalLevelLength = 0; // Para calcular %
 
-        const winSfx = new Audio('win.mp3');
-        winSfx.volume = 0.8;
+        const _ = {
+            S: (len) => ({ t:'S', len }),
+            T: (dir, f, len) => ({ t:'T', dir, f, len }), 
+            V: (slope, len) => ({ t:'V', s:slope, len }),
+            W: (act, len) => ({ t:'W', action: act, len })
+        };
 
-        const textureLoader = new THREE.TextureLoader();
-        textureLoader.crossOrigin = "Anonymous";
-        const floorTexture = textureLoader.load('https://logise1.github.io/firedodo/assets/floor.png');
-        const playerTexture = textureLoader.load('https://logise1.github.io/firedodo/assets/player.png');
-        
-        floorTexture.wrapS = THREE.RepeatWrapping;
-        floorTexture.wrapT = THREE.RepeatWrapping;
-        floorTexture.repeat.set(1, 1);
+        const CONFIG = {
+            speed: 90.0,
+            turnSpeed: 2.2, 
+            gravity: 180.0,
+            pathWidth: 30,
+            cameraDist: 24,
+            cameraHeight: 18
+        };
 
-        const cubeLoader = new THREE.CubeTextureLoader();
-        const skyboxTexture = cubeLoader.load([
-            'https://logise1.github.io/firedodo/assets/skybox/right.png',
-            'https://logise1.github.io/firedodo/assets/skybox/left.png',
-            'https://logise1.github.io/firedodo/assets/skybox/top.png',
-            'https://logise1.github.io/firedodo/assets/skybox/bottom.png',
-            'https://logise1.github.io/firedodo/assets/skybox/front.png',
-            'https://logise1.github.io/firedodo/assets/skybox/back.png'
-        ]);
+        let currentCamHeight = CONFIG.cameraHeight;
+        let currentCamDist = CONFIG.cameraDist;
 
-        function init() {
+        function mulberry32(a) {
+            return function() {
+              var t = a += 0x6D2B79F5;
+              t = Math.imul(t ^ t >>> 15, t | 1);
+              t ^= t + Math.imul(t ^ t >>> 7, t | 61);
+              return ((t ^ t >>> 14) >>> 0) / 4294967296;
+            }
+        }
+
+        // --- NIVELES CON SKYBOX PERSONALIZADO ---
+        // sky: { c1: topColor, c2: bottomColor, stars: count }
+        const LEVELS = [
+            { 
+                id:0, name:"Tutorial", diff:"Tutorial", 
+                sky: { c1: '#000022', c2: '#001133', stars: 50 },
+                theme: { floor:0x444444, fog:0x101020, obs:0xffffff, shape:'box', filter:'#0055ff' }, 
+                data: [_.S(50), _.W('right', 30), _.T(1, 0.8, 40), _.S(40), _.W('left', 30), _.T(-1, 0.8, 40), _.S(60), _.V(0.3, 60), _.V(-0.3, 80), _.S(100)] 
+            },
+            { id:1, name:"Space Walk", diff:"Easy", sky: { c1: '#000000', c2: '#000020', stars: 200 }, theme: { floor:0xaaaaaa, fog:0x000010, obs:0x00ffff, shape:'box', filter:'#00ffff' }, data: [_.S(80), _.T(-1, 0.3, 60), _.S(60), _.T(1, 0.3, 60), _.S(100)] },
+            { id:2, name:"Candy Land", diff:"Easy", sky: { c1: '#ffdddd', c2: '#ffbbbb', stars: 20 }, theme: { floor:0xffdddd, fog:0x330011, obs:0xff00aa, shape:'cylinder', filter:'#ff00aa' }, data: [_.S(60), _.T(1, 0.5, 80), _.S(40), _.T(-1, 0.5, 80), _.S(120)] },
+            { id:3, name:"Toxic Waste", diff:"Easy", sky: { c1: '#001100', c2: '#003300', stars: 50 }, theme: { floor:0xddffdd, fog:0x002200, obs:0x00ff00, shape:'box', filter:'#00ff00' }, data: [_.S(40), _.V(0.2, 100), _.S(40), _.T(-1, 0.5, 60), _.V(0.2, 100), _.S(80)] },
+            { id:4, name:"Solar", diff:"Medium", sky: { c1: '#331100', c2: '#662200', stars: 100 }, theme: { floor:0xffffcc, fog:0x221100, obs:0xffaa00, shape:'cone', filter:'#ffaa00' }, data: [_.S(40), _.T(1, 0.8, 40), _.T(-1, 0.8, 40), _.T(1, 0.8, 40), _.T(-1, 0.8, 40), _.S(80)] },
+            { id:5, name:"Hyper Speed", diff:"Medium", sky: { c1: '#000044', c2: '#000088', stars: 300 }, theme: { floor:0xccccff, fog:0x000033, obs:0x4444ff, shape:'cylinder', filter:'#4444ff' }, data: [_.S(150), _.T(-1, 0.2, 100), _.S(200)] },
+            { id:6, name:"Deep Sea", diff:"Medium", sky: { c1: '#001122', c2: '#002244', stars: 40 }, theme: { floor:0xaaffff, fog:0x001122, obs:0x00aaaa, shape:'box', filter:'#00aaaa' }, data: [_.S(40), _.V(0.1, 80), _.S(40), _.V(-0.1, 80), _.S(80)] },
+            { id:7, name:"Red Alert", diff:"Hard", sky: { c1: '#330000', c2: '#550000', stars: 0 }, theme: { floor:0xffaaaa, fog:0x330000, obs:0xff0000, shape:'cone', filter:'#ff0000' }, data: [_.S(40), _.V(-0.3, 150), _.S(80), _.T(1, 0.4, 80), _.S(100)] },
+            { id:8, name:"Jungle", diff:"Hard", sky: { c1: '#002200', c2: '#004411', stars: 20 }, theme: { floor:0xaaffaa, fog:0x002211, obs:0x008844, shape:'cylinder', filter:'#00ff44' }, data: [_.S(60), _.T(1, 1.0, 30), _.T(-1, 1.0, 30), _.T(1, 1.0, 30), _.T(-1, 1.0, 30), _.S(100)] },
+            { id:9, name:"Whiteout", diff:"Hard", sky: { c1: '#cccccc', c2: '#eeeeee', stars: 0 }, theme: { floor:0xffffff, fog:0x888888, obs:0x222222, shape:'box', filter:'#ffffff' }, data: [_.S(40), _.T(1, 1.0, 80), _.S(20), _.T(-1, 1.0, 80), _.S(60)] },
+            { id:10, name:"Void", diff:"Insane", sky: { c1: '#000000', c2: '#110011', stars: 500 }, theme: { floor:0x666666, fog:0x000000, obs:0xaa00ff, shape:'cone', filter:'#aa00ff' }, data: [_.V(0.3, 60), _.V(-0.3, 60), _.T(1, 0.8, 60), _.V(0.3, 60), _.V(-0.3, 60), _.S(80)] },
+            { id:11, name:"Rusty", diff:"Insane", sky: { c1: '#331100', c2: '#442211', stars: 50 }, theme: { floor:0xddbb99, fog:0x221105, obs:0x884400, shape:'cylinder', filter:'#ff8800' }, data: [_.S(40), _.T(1, 0.5, 300), _.S(80)] },
+            { id:12, name:"Neon Nights", diff:"Insane", sky: { c1: '#110022', c2: '#220044', stars: 200 }, theme: { floor:0x333333, fog:0x110022, obs:0xff00ff, shape:'box', filter:'#ff00ff' }, data: [_.S(40), _.T(-1, 1.2, 80), _.S(40), _.T(1, 1.2, 80), _.S(80)] },
+            { id:13, name:"Glacier", diff:"Expert", sky: { c1: '#ddeeff', c2: '#ffffff', stars: 50 }, theme: { floor:0xddeeff, fog:0x223344, obs:0x0088ff, shape:'cone', filter:'#0088ff' }, data: [_.S(40), _.T(1, 1.5, 40), _.V(-0.2, 120), _.T(-1, 1.5, 40), _.S(80)] },
+            { id:14, name:"Matrix", diff:"Expert", sky: { c1: '#000000', c2: '#001100', stars: 1000 }, theme: { floor:0x000000, fog:0x002200, obs:0x00ff00, shape:'box', filter:'#00ff00' }, data: [_.S(40), _.T(-1, 1.8, 40), _.T(1, 1.8, 40), _.V(0.4, 60), _.T(-1, 1.5, 80), _.S(120)] },
+            { id:15, name:"The End", diff:"Expert", sky: { c1: '#111111', c2: '#333333', stars: 100 }, theme: { floor:0x222222, fog:0x111111, obs:0xffffff, shape:'cylinder', filter:'#aaaaaa' }, data: [_.S(40), _.V(-0.4, 100), _.T(1, 1.5, 60), _.V(0.4, 100), _.T(-1, 1.5, 60), _.S(150)] },
+            { id:16, name:"Nebula", diff:"Hard", sky: { c1: '#220022', c2: '#440044', stars: 300 }, theme: { floor:0x220022, fog:0x110033, obs:0x00ffff, shape:'box', filter:'#ff00ff' }, data: [_.S(60), _.T(1, 2.0, 40), _.V(0.5, 80), _.T(-1, 2.0, 40), _.S(80)] },
+            { id:17, name:"Asteroid", diff:"Hard", sky: { c1: '#111111', c2: '#222222', stars: 500 }, theme: { floor:0x443322, fog:0x111111, obs:0x888888, shape:'cone', filter:'#aa5500' }, data: [_.V(-0.5, 100), _.T(1, 1.0, 20), _.T(-1, 1.0, 20), _.T(1, 1.0, 20), _.S(100)] },
+            { id:18, name:"Cyberpunk", diff:"Hard", sky: { c1: '#000022', c2: '#222200', stars: 200 }, theme: { floor:0x001122, fog:0x000022, obs:0xffff00, shape:'box', filter:'#ffff00' }, data: [_.S(40), _.T(1, 2.5, 40), _.V(-0.2, 50), _.T(-1, 2.5, 40), _.S(60)] },
+            { id:19, name:"Black Hole", diff:"Hard", sky: { c1: '#000000', c2: '#050505', stars: 20 }, theme: { floor:0x111111, fog:0x050505, obs:0x5500aa, shape:'cylinder', filter:'#5500aa' }, data: [_.S(40), _.T(-1, 3.0, 20), _.T(1, 3.0, 20), _.V(0.6, 80), _.S(80)] },
+            { id:20, name:"Horizon", diff:"Hard", sky: { c1: '#ffeecc', c2: '#ffaa00', stars: 0 }, theme: { floor:0xffffff, fog:0xffeecc, obs:0xffaa00, shape:'box', filter:'#ffaa00' }, data: [_.S(200), _.V(0.1, 200), _.S(200)] },
+            { id:21, name:"Magma Core", diff:"Insane", sky: { c1: '#330000', c2: '#ff0000', stars: 50 }, theme: { floor:0x330000, fog:0x1a0000, obs:0xff4400, shape:'cone', filter:'#ff4400' }, data: [_.S(50), _.V(-0.4, 80), _.S(20), _.V(-0.4, 80), _.T(1, 1.5, 50), _.T(-1, 1.5, 50), _.S(100)] },
+            { id:22, name:"Serpent", diff:"Insane", sky: { c1: '#002200', c2: '#004400', stars: 100 }, theme: { floor:0x003300, fog:0x001100, obs:0x00ff44, shape:'cylinder', filter:'#00ff44' }, data: [_.S(40), _.T(1, 1.0, 20), _.T(-1, 1.0, 20), _.T(1, 1.0, 20), _.T(-1, 1.0, 20), _.T(1, 1.0, 20), _.T(-1, 1.0, 20), _.S(80)] },
+            { id:23, name:"Sky High", diff:"Expert", sky: { c1: '#ccffff', c2: '#ffffff', stars: 10 }, theme: { floor:0xeeffff, fog:0xccffff, obs:0x0088ff, shape:'box', filter:'#00aaff' }, data: [_.V(0.5, 200), _.S(20), _.T(1, 2.5, 40), _.V(-0.5, 200), _.S(50)] },
+            { id:24, name:"Nightmare", diff:"Expert", sky: { c1: '#050005', c2: '#110000', stars: 50 }, theme: { floor:0x110011, fog:0x050005, obs:0xff0000, shape:'cone', filter:'#550000' }, data: [_.S(40), _.T(1, 3.0, 30), _.T(-1, 3.0, 30), _.V(-0.3, 100), _.T(1, 2.5, 50), _.S(120)] },
+            { id:25, name:"Quantum", diff:"Master", sky: { c1: '#000011', c2: '#111122', stars: 500 }, theme: { floor:0x222233, fog:0x000011, obs:0xffffff, shape:'box', filter:'#ffffff' }, data: [_.S(60), _.V(0.4, 100), _.T(-1, 3.0, 40), _.V(-0.4, 100), _.T(1, 3.0, 40), _.S(200)] },
+            { id:26, name:"Omega", diff:"Godlike", sky: { c1: '#000000', c2: '#110022', stars: 1000 }, theme: { floor:0x000000, fog:0x000000, obs:0xff00ff, shape:'cylinder', filter:'#ff00ff' }, data: [_.S(100), _.T(1, 1.0, 200), _.T(-1, 1.0, 200), _.S(150)] },
+            { id:27, name:"Inferno", diff:"Godlike", sky: { c1: '#220000', c2: '#441100', stars: 100 }, theme: { floor:0x440000, fog:0x220000, obs:0xffaa00, shape:'cone', filter:'#ff2200' }, data: [_.V(-0.6, 150), _.T(1, 3.5, 30), _.V(0.6, 150), _.T(-1, 3.5, 30), _.S(100)] },
+            { id:28, name:"Zenith", diff:"Godlike", sky: { c1: '#ffffaa', c2: '#ffffff', stars: 200 }, theme: { floor:0xffffee, fog:0xffffff, obs:0x444444, shape:'box', filter:'#ffffaa' }, data: [_.S(50), _.T(1, 2.0, 30), _.T(-1, 2.0, 30), _.V(0.2, 300), _.S(50)] },
+            { id:29, name:"Abyss", diff:"Godlike", sky: { c1: '#000000', c2: '#000000', stars: 5 }, theme: { floor:0x050505, fog:0x020202, obs:0x333333, shape:'box', filter:'#111111' }, data: [_.S(50), _.V(-0.7, 250), _.T(1, 4.0, 40), _.S(200)] },
+            { id:30, name:"Firedodo", diff:"Godlike", sky: { c1: '#220000', c2: '#440000', stars: 1000 }, theme: { floor:0xff4400, fog:0x220000, obs:0xffff00, shape:'cylinder', filter:'#ff4400' }, data: [_.S(100), _.T(-1, 2.0, 50), _.V(0.5, 100), _.T(1, 2.0, 50), _.V(-0.5, 100), _.T(-1, 3.0, 50), _.S(300)] }
+        ];
+
+        function initGame() {
+            initAssets();
+            
+            raycaster = new THREE.Raycaster();
+            downVec = new THREE.Vector3(0, -1, 0);
+
+            document.getElementById('level-selector').classList.remove('hidden');
+
             clock = new THREE.Clock();
             scene = new THREE.Scene();
             
-            scene.background = skyboxTexture;
+            textureLoader = new THREE.TextureLoader();
+            cubeLoader = new THREE.CubeTextureLoader();
+
+            floorTexture = textureLoader.load(Assets.floor);
+            floorTexture.wrapS = THREE.RepeatWrapping;
+            floorTexture.wrapT = THREE.RepeatWrapping;
+            
+            playerTexture = textureLoader.load(Assets.player);
+
             scene.fog = new THREE.FogExp2(0x000000, 0.001);
 
             camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 2000);
@@ -408,40 +492,6 @@
             requestAnimationFrame(animate);
         }
 
-        function playMusic() {
-            clearInterval(fadeInterval);
-            bgm.volume = 0.6; 
-            bgm.currentTime = 0;
-            bgm.play().catch(e => console.log("Audio autoplay blocked"));
-        }
-
-        function stopMusic() {
-            clearInterval(fadeInterval);
-            bgm.pause();
-            bgm.currentTime = 0;
-            bgm.volume = 0.6;
-        }
-
-        function fadeOutMusic() {
-            clearInterval(fadeInterval); 
-            let vol = bgm.volume;
-            fadeInterval = setInterval(() => {
-                if (vol > 0.05) {
-                    vol -= 0.05;
-                    bgm.volume = vol;
-                } else {
-                    bgm.pause();
-                    clearInterval(fadeInterval);
-                }
-            }, 100);
-        }
-
-        function playWinSound() {
-            stopMusic();
-            winSfx.currentTime = 0;
-            winSfx.play().catch(e => {});
-        }
-
         function createLevelMenu() {
             const grid = document.getElementById('grid-container');
             grid.innerHTML = ''; 
@@ -450,15 +500,22 @@
                 card.className = 'level-card';
                 card.onclick = () => startLevel(index);
                 
-                const img = document.createElement('img');
+                const img = document.createElement('div');
                 img.className = 'card-image';
-                const hexColor = lvl.theme.fog.toString(16).padStart(6, '0');
-                img.src = `https://placehold.co/400x250/${hexColor}/ffffff?text=%20`;
+                // Usamos el color de niebla como base
+                const hexColor = '#' + lvl.theme.fog.toString(16).padStart(6, '0');
+                img.style.backgroundColor = hexColor;
                 
                 const badge = document.createElement('div');
                 badge.className = `card-badge diff-${lvl.diff}`;
                 badge.innerText = lvl.diff;
-                
+
+                // --- RECORD ---
+                const best = localStorage.getItem(`firedodo_record_${lvl.id}`) || 0;
+                const rec = document.createElement('div');
+                rec.className = 'card-record';
+                rec.innerText = `Récord: ${best}%`;
+
                 const title = document.createElement('div');
                 title.className = 'card-title-overlay';
                 title.innerText = lvl.name;
@@ -470,18 +527,22 @@
                 card.appendChild(grad); 
                 card.appendChild(title); 
                 card.appendChild(badge);
+                card.appendChild(rec);
                 grid.appendChild(card);
             });
         }
 
         function showMenu() {
             isGameActive = false;
-            stopMusic();
             document.querySelectorAll('.modal-screen').forEach(e => e.classList.add('hidden'));
             document.getElementById('hud-container').style.display = 'none';
+            document.getElementById('game-ui').style.display = 'none'; // Ocultar HUD nuevo
             document.getElementById('ui-layer').style.background = "rgba(5, 5, 10, 0.98)";
             document.getElementById('color-overlay').style.backgroundColor = "transparent";
             document.getElementById('level-selector').classList.remove('hidden');
+            document.getElementById('tutorial-overlay').style.display = 'none';
+            // Refrescar records
+            createLevelMenu();
         }
 
         function spawnParticle() {
@@ -523,22 +584,32 @@
             const level = LEVELS[idx];
             const theme = level.theme;
 
+            // --- SKYBOX PERSONALIZADO ---
+            const skyUrls = generateSkybox(level.sky.c1, level.sky.c2, level.sky.stars);
+            const skyTex = cubeLoader.load(skyUrls);
+            scene.background = skyTex;
+
+            // Resetear RNG Determinista
+            let rng = mulberry32(level.id * 12345 + 5678);
+
             document.getElementById('level-display').innerText = `${level.id}. ${level.name}`;
+            document.getElementById('level-name-hud').innerText = `${level.id}. ${level.name}`;
 
             scene.fog.color.setHex(theme.fog);
             document.getElementById('color-overlay').style.backgroundColor = theme.filter;
             
-            const matFloor = new THREE.MeshStandardMaterial({ 
-                map: floorTexture, roughness: 0.4, color: theme.floor 
-            });
+            const matFloor = new THREE.MeshStandardMaterial({ map: floorTexture, roughness: 0.4, color: theme.floor });
             const matFinish = new THREE.MeshStandardMaterial({ color: 0x00ff00, emissive: 0x005500 });
-            const matObs = new THREE.MeshStandardMaterial({ 
-                color: theme.obs, emissive: theme.obs, emissiveIntensity: 0.5 
-            });
+            const matObs = new THREE.MeshStandardMaterial({ color: theme.obs, emissive: theme.obs, emissiveIntensity: 0.5 });
 
             let cursor = { pos: new THREE.Vector3(0, 0, 30), yaw: 0, pitch: 0 };
+            let segmentCounter = 0; 
+            totalLevelLength = 0; // Reset longitud
 
-            const addSegment = (len, dYaw=0, dPitch=0, isFinish=false) => {
+            const addSegment = (len, dYaw=0, dPitch=0, typeData=null, isFinish=false) => {
+                segmentCounter++;
+                totalLevelLength += len; // Sumar longitud para calcular %
+
                 const hLen = Math.cos(cursor.pitch) * len; 
                 const vLen = Math.sin(cursor.pitch) * len; 
                 const dx = Math.sin(cursor.yaw) * hLen;
@@ -554,16 +625,19 @@
                 mesh.position.copy(midPos);
                 mesh.lookAt(endPos);
                 mesh.receiveShadow = true;
-                mesh.userData = { pitch: cursor.pitch }; // Guardar el pitch para la cámara
+                mesh.userData = { pitch: cursor.pitch };
+                
+                if(typeData && typeData.t === 'W') {
+                    mesh.userData.isTutorial = true;
+                    mesh.userData.action = typeData.action;
+                    mesh.userData.completed = false;
+                }
                 if(isFinish) mesh.userData.isFinish = true;
 
                 scene.add(mesh);
                 pathSegments.push(mesh);
 
-                // --- LÓGICA DE OBSTÁCULOS ---
                 let obsChance = 0.0;
-                // Nota: Eliminada variable 'canMove' para que los obstáculos ya no se muevan
-
                 if (level.diff === "Easy") obsChance = 0.02;
                 else if (level.diff === "Medium") obsChance = 0.05;
                 else if (level.diff === "Hard") { obsChance = 0.10; }
@@ -572,7 +646,7 @@
                 else if (level.diff === "Master") { obsChance = 0.25; }
                 else if (level.diff === "Godlike") { obsChance = 0.30; }
 
-                if(!isFinish && Math.random() < obsChance) {
+                if(!isFinish && !mesh.userData.isTutorial && segmentCounter > 25 && rng() < obsChance) {
                     let obsGeo;
                     if (theme.shape === 'cone') obsGeo = new THREE.ConeGeometry(2, 4, 16);
                     else if (theme.shape === 'cylinder') obsGeo = new THREE.CylinderGeometry(1.5, 1.5, 4, 16);
@@ -580,7 +654,8 @@
 
                     const obs = new THREE.Mesh(obsGeo, matObs);
                     const maxOffset = (CONFIG.pathWidth / 2) - 4;
-                    const offset = (Math.random()-0.5) * 2 * maxOffset;
+                    
+                    const offset = (rng()-0.5) * 2 * maxOffset;
                     
                     const rightVec = new THREE.Vector3(1,0,0).applyQuaternion(mesh.quaternion);
                     const upVec = new THREE.Vector3(0,1,0).applyQuaternion(mesh.quaternion);
@@ -590,10 +665,7 @@
                     obs.position.add(rightVec.multiplyScalar(offset));
                     obs.rotation.copy(mesh.rotation);
                     obs.castShadow = true;
-                    
-                    // Ya no asignamos movimiento a los obstáculos
                     obs.userData = { moving: false };
-
                     scene.add(obs);
                     obstacles.push(obs);
                 }
@@ -610,6 +682,9 @@
                     const blocks = Math.ceil(item.len / BASE_SEGMENT_LEN);
                     for(let i=0; i<blocks; i++) addSegment(BASE_SEGMENT_LEN, 0, 0);
                 }
+                else if(item.t === 'W') { 
+                    addSegment(item.len, 0, 0, item);
+                }
                 else if(item.t === 'T') { 
                     const count = Math.ceil((item.len * 5) / BASE_SEGMENT_LEN); 
                     const angleStep = (item.dir * item.f) / count;
@@ -623,7 +698,7 @@
                     cursor.pitch = 0; 
                 }
             });
-            addSegment(30, 0, 0, true);
+            addSegment(30, 0, 0, null, true);
         }
 
         function startLevel(idx) {
@@ -634,24 +709,38 @@
             document.getElementById('game-over').classList.add('hidden');
             document.getElementById('level-complete').classList.add('hidden');
             document.getElementById('hud-container').style.display = 'block';
+            document.getElementById('game-ui').style.display = 'block';
+            
             player.position.set(0, 0, 0);
             player.rotation.set(0, 0, 0);
             discMesh.rotation.set(0,0,0);
             playerVelY = 0;
+            timeScale = 1.0;
+            document.getElementById('tutorial-overlay').style.display = 'none';
+
             generateLevel(idx);
             isGameActive = true;
             clock.start();
-            playMusic();
         }
 
         function restartLevel() { 
-            stopMusic(); 
             startLevel(currentLevel); 
         }
         
         function nextLevel() { 
+            // Guardar progreso 100% al ganar
+            saveRecord(100);
             if(currentLevel < LEVELS.length - 1) startLevel(currentLevel + 1);
             else showMenu();
+        }
+
+        // Función para guardar récord
+        function saveRecord(percent) {
+            const key = `firedodo_record_${LEVELS[currentLevel].id}`;
+            const currentBest = parseInt(localStorage.getItem(key) || "0");
+            if (percent > currentBest) {
+                localStorage.setItem(key, percent.toString());
+            }
         }
 
         function setupInputs() {
@@ -678,13 +767,9 @@
             });
         }
 
-        // --- VARIABLES DE CÁMARA ---
-        let currentCamHeight = CONFIG.cameraHeight;
-        let currentCamDist = CONFIG.cameraDist;
-        let currentPitchOffset = 0;
-
         function animate(timestamp) {
             requestAnimationFrame(animate);
+            if(!clock) return;
 
             if (maxFPS !== 0) {
                 const frameInterval = 1000 / maxFPS;
@@ -693,10 +778,21 @@
                 lastFrameTime = timestamp - (elapsed % frameInterval);
             }
 
-            const dt = Math.min(clock.getDelta(), 0.1);
+            const realDt = Math.min(clock.getDelta(), 0.1);
+            const dt = realDt * timeScale;
             const time = clock.getElapsedTime();
 
             if(isGameActive) {
+                // --- CÁLCULO DE PROGRESO ---
+                // Aproximación simple basada en la posición Z. 
+                // Como el jugador se mueve en -Z, invertimos.
+                // El inicio es 0, el final es aprox totalLevelLength
+                const distanceTraveled = Math.abs(player.position.z); 
+                let percent = Math.floor((distanceTraveled / totalLevelLength) * 100);
+                if(percent > 100) percent = 100;
+                document.getElementById('progress-text').innerText = `${percent}%`;
+
+
                 const turn = CONFIG.turnSpeed * dt;
                 if(input.l) player.rotation.y += turn;
                 if(input.r) player.rotation.y -= turn;
@@ -705,49 +801,67 @@
                 playerVelY -= CONFIG.gravity * dt;
                 player.position.y += playerVelY * dt;
 
-                // RAYCAST
                 const rayPos = player.position.clone();
                 rayPos.y += 20; 
                 raycaster.set(rayPos, downVec);
                 const hits = raycaster.intersectObjects(pathSegments);
 
-                let currentSlope = 0; // Pendiente actual
+                let currentSlope = 0; 
+                let onTutorialSegment = null;
 
                 if(hits.length > 0) {
                     const hit = hits[0];
-                    currentSlope = hit.object.userData.pitch || 0; // Recuperar pitch del segmento
+                    currentSlope = hit.object.userData.pitch || 0; 
                     
+                    if(hit.object.userData.isTutorial && !hit.object.userData.completed) {
+                        onTutorialSegment = hit.object;
+                    }
+
                     const distToFloor = hit.distance - 20; 
                     if(distToFloor < 5 && distToFloor > -8) { 
                         player.position.y = hit.point.y;
                         playerVelY = 0;
                         if(hit.object.userData.isFinish) {
                             isGameActive = false;
-                            playWinSound();
                             document.getElementById('level-complete').classList.remove('hidden');
                         }
                     }
                 }
 
-                // --- LÓGICA CÁMARA EN BAJADAS ---
-                // Definimos la posición normal
-                let targetH = CONFIG.cameraHeight;
-                let targetD = CONFIG.cameraDist;
-                
-                // MODIFICADO: Si la pendiente es muy pronunciada hacia abajo (bajada fuerte)
-                // Movemos la cámara para que esté "encima" (alto H, bajo D)
-                if (currentSlope < -0.2) {
-                    targetH = CONFIG.cameraHeight + 40; // Subir mucho la cámara (vista pájaro)
-                    targetD = 12;                       // Acercar en Z para estar casi encima
+                // --- SISTEMA TUTORIAL SLOW-MOTION ---
+                if(onTutorialSegment) {
+                    const action = onTutorialSegment.userData.action;
+                    timeScale = THREE.MathUtils.lerp(timeScale, 0.07, 0.1); 
+                    const overlay = document.getElementById('tutorial-overlay');
+                    overlay.style.display = 'block';
+                    if(action === 'left') {
+                        document.getElementById('tut-icon').innerText = '←';
+                        document.getElementById('tut-msg').innerText = 'PULSA IZQUIERDA';
+                        if(input.l) onTutorialSegment.userData.completed = true;
+                    } else {
+                        document.getElementById('tut-icon').innerText = '→';
+                        document.getElementById('tut-msg').innerText = 'PULSA DERECHA';
+                        if(input.r) onTutorialSegment.userData.completed = true;
+                    }
+                } else {
+                    timeScale = THREE.MathUtils.lerp(timeScale, 1.0, 0.1);
+                    if(timeScale > 0.9) {
+                        document.getElementById('tutorial-overlay').style.display = 'none';
+                        timeScale = 1.0;
+                    }
                 }
 
-                // Suavizado de cámara (Lerp)
+                // --- CÁMARA ---
+                let targetH = CONFIG.cameraHeight;
+                let targetD = CONFIG.cameraDist;
+                if (currentSlope < -0.2) { targetH = CONFIG.cameraHeight + 40; targetD = 12; }
                 currentCamHeight += (targetH - currentCamHeight) * 2.5 * dt;
                 currentCamDist += (targetD - currentCamDist) * 2.5 * dt;
 
+                // --- MUERTE POR CAÍDA ---
                 if(player.position.y < -500) {
                     isGameActive = false;
-                    fadeOutMusic();
+                    saveRecord(percent); // Guardar progreso
                     document.getElementById('fail-reason').innerText = "Caída al vacío";
                     document.getElementById('game-over').classList.remove('hidden');
                 }
@@ -755,15 +869,18 @@
                 discMesh.rotation.y += 10.0 * dt; 
                 spawnParticle();
                 
-                // --- ACTUALIZAR OBSTÁCULOS (YA NO SE MUEVEN) ---
+                // --- COLISIÓN CON OBSTÁCULOS (Instant Reset) ---
                 for(let o of obstacles) {
-                    // Se ha eliminado el código de movimiento
-
                     if(player.position.distanceToSquared(o.position) < 15) {
+                        // GUARDAR RECORD ANTES DE MORIR
+                        saveRecord(percent);
+                        
+                        // CONGELAR Y REINICIAR (Sin popup)
                         isGameActive = false;
-                        fadeOutMusic();
-                        document.getElementById('fail-reason').innerText = "¡Choque!";
-                        document.getElementById('game-over').classList.remove('hidden');
+                        setTimeout(() => {
+                            restartLevel();
+                        }, 500);
+                        return;
                     }
                 }
             }
@@ -771,7 +888,6 @@
             updateParticles(dt);
 
             if(player) {
-                // Usar las variables dinámicas de cámara
                 const camOff = new THREE.Vector3(0, currentCamHeight, currentCamDist);
                 camOff.applyAxisAngle(new THREE.Vector3(0,1,0), player.rotation.y);
                 const target = player.position.clone().add(camOff);
@@ -779,11 +895,9 @@
                 const lerp = 1 - Math.exp(-10 * dt); 
                 camera.position.lerp(target, lerp);
                 
-                // MODIFICADO: LookAt
-                // Si la cámara está muy alta (modo bajada), miramos más "abajo" y hacia adelante
                 const isTopDown = (currentCamHeight > CONFIG.cameraHeight + 10);
-                const lookDownOffset = isTopDown ? -20 : 0; // Bajar el punto de mira en bajadas
-                const lookForwardDist = isTopDown ? -10 : -30; // Mirar menos lejos en bajadas (más al suelo)
+                const lookDownOffset = isTopDown ? -20 : 0; 
+                const lookForwardDist = isTopDown ? -10 : -30; 
 
                 const lookTarget = player.position.clone().add(
                     new THREE.Vector3(0, lookDownOffset, lookForwardDist).applyAxisAngle(new THREE.Vector3(0,1,0), player.rotation.y)
@@ -795,12 +909,15 @@
         }
 
         window.addEventListener('resize', () => {
-            camera.aspect = window.innerWidth/window.innerHeight;
-            camera.updateProjectionMatrix();
-            renderer.setSize(window.innerWidth, window.innerHeight);
+            if(camera && renderer) {
+                camera.aspect = window.innerWidth/window.innerHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize(window.innerWidth, window.innerHeight);
+            }
         });
 
-        init();
+        window.onload = initGame;
+
     </script>
 </body>
 </html>
