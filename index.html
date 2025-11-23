@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Firedodo MMO - Trophies</title>
+    <title>Firedodo MMO Fixed</title>
     
     <!-- PWA META TAGS -->
     <link rel="manifest" href="manifest.json">
@@ -130,7 +130,6 @@
             box-shadow: 0 2px 4px rgba(0,0,0,0.8);
         }
         
-        /* LIVE & TROPHY UI */
         .card-live {
             position: absolute; bottom: 32px; left: 8px; background: rgba(0,0,0,0.7);
             color: #00ff00; padding: 2px 6px; border-radius: 4px; font-size: 10px; font-weight: bold;
@@ -174,7 +173,6 @@
         #level-name-hud { font-size: 12px; color: rgba(255,255,255,0.7); text-transform: uppercase; }
         #controls-hint { position: absolute; bottom: 20px; width: 100%; text-align: center; font-size: 12px; color: rgba(255,255,255,0.4); text-transform: uppercase; letter-spacing: 1px; }
 
-        /* --- RANKING MODAL --- */
         #ranking-modal {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 180;
             background: rgba(0,0,0,0.9); backdrop-filter: blur(5px);
@@ -204,7 +202,6 @@
         .rank-name { flex: 1; text-align: left; }
         .rank-score { font-weight: bold; color: #ffcc00; display: flex; align-items: center; gap: 5px; }
 
-        /* --- MODALES JUEGO --- */
         .modal-screen {
             position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
             background: rgba(15, 15, 20, 0.95); padding: 30px 50px; border-radius: 15px;
@@ -744,8 +741,11 @@
             const level = LEVELS[idx];
             document.getElementById('level-name-hud').innerText = level.name;
             
+            // Solución al error "reading color of null"
+            // Creamos la niebla de nuevo en cada nivel
+            scene.fog = new THREE.FogExp2(level.theme.fog, 0.001);
+            
             scene.background = cubeLoader.load(generateSkybox(level.sky));
-            scene.fog.color.setHex(level.theme.fog);
             document.getElementById('color-overlay').style.backgroundColor = level.theme.filter;
 
             const matFloor = new THREE.MeshStandardMaterial({ map: floorTexture, color: level.theme.floor });
