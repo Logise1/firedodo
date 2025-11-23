@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Firedodo Enhanced</title>
+    <title>Firedodo MMO - Trophies</title>
     
     <!-- PWA META TAGS -->
     <link rel="manifest" href="manifest.json">
@@ -12,8 +12,9 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 
-    <!-- Carga Online de Three.js -->
+    <!-- Three.js -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+
     <style>
         /* --- ESTILOS GENERALES --- */
         body { margin: 0; overflow: hidden; background-color: #050505; font-family: 'Segoe UI', Tahoma, sans-serif; touch-action: none; user-select: none; -webkit-user-select: none; }
@@ -28,32 +29,48 @@
             transition: background-color 0.5s ease;
         }
 
+        /* --- LOGIN SCREEN --- */
+        #login-screen {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: #000; z-index: 200; display: flex; flex-direction: column; justify-content: center; align-items: center;
+            pointer-events: auto;
+        }
+        #login-box {
+            background: #111; padding: 30px; border-radius: 15px; border: 1px solid #ff4400; text-align: center;
+            box-shadow: 0 0 50px rgba(255, 68, 0, 0.2); max-width: 300px; width: 90%;
+        }
+        .login-input {
+            background: #222; border: 1px solid #444; color: white; padding: 10px; font-size: 16px;
+            border-radius: 5px; margin-bottom: 10px; width: 100%; box-sizing: border-box; text-align: center;
+        }
+        .login-row { display: flex; gap: 10px; justify-content: center; margin-top: 10px; }
+        .error-msg { color: #ff4444; font-size: 12px; margin-top: 10px; height: 15px; }
+
+        /* --- BARRA SUPERIOR USUARIO --- */
+        #user-bar {
+            position: absolute; top: 10px; right: 20px; z-index: 150; pointer-events: auto;
+            display: flex; gap: 15px; align-items: center;
+            background: rgba(0,0,0,0.8); padding: 5px 15px; border-radius: 20px; border: 1px solid #333;
+        }
+        .stat-display { color: #fff; font-weight: bold; display: flex; align-items: center; gap: 5px; font-size: 14px; }
+        .user-name { color: #fff; font-weight: bold; text-transform: uppercase; font-size: 14px; border-right: 1px solid #444; padding-right: 15px; }
+        .trophy-icon { color: #ffcc00; text-shadow: 0 0 5px #ffaa00; }
+
         #color-overlay {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
             z-index: 90; pointer-events: none;
-            mix-blend-mode: overlay; 
-            opacity: 0.2; 
-            background: transparent;
+            mix-blend-mode: overlay; opacity: 0.2; background: transparent;
             transition: background-color 1s;
         }
 
-        /* --- TUTORIAL OVERLAY --- */
         #tutorial-overlay {
             position: absolute; top: 30%; width: 100%; text-align: center;
             pointer-events: none; display: none; z-index: 95;
         }
-        .tut-arrow {
-            font-size: 100px; color: white; font-weight: bold;
-            text-shadow: 0 0 20px #ff4400;
-            animation: pulse 0.5s infinite alternate;
-        }
-        .tut-text {
-            font-size: 24px; color: #fff; text-transform: uppercase; letter-spacing: 2px;
-            background: rgba(0,0,0,0.7); display: inline-block; padding: 10px 20px; border-radius: 10px;
-        }
+        .tut-arrow { font-size: 100px; color: white; font-weight: bold; text-shadow: 0 0 20px #ff4400; animation: pulse 0.5s infinite alternate; }
+        .tut-text { font-size: 24px; color: #fff; text-transform: uppercase; letter-spacing: 2px; background: rgba(0,0,0,0.7); display: inline-block; padding: 10px 20px; border-radius: 10px; }
         @keyframes pulse { from { transform: scale(1); opacity: 0.8; } to { transform: scale(1.2); opacity: 1; } }
 
-        /* --- MENU DE NIVELES --- */
         #level-selector {
             width: 100%; height: 100%; pointer-events: auto;
             display: flex; flex-direction: column; align-items: center;
@@ -72,30 +89,27 @@
             text-shadow: 0 0 20px rgba(255, 68, 0, 0.6); line-height: 1;
         }
 
+        .header-controls {
+            display: flex; gap: 10px; margin-top: 5px;
+        }
+
         .settings-panel {
             display: flex; align-items: center; gap: 10px;
             background: rgba(20, 20, 20, 0.8); padding: 4px 12px; border-radius: 20px;
             border: 1px solid #333; pointer-events: auto;
         }
         .settings-label { color: #aaa; font-size: 12px; font-weight: bold; text-transform: uppercase; }
-        #fps-select {
-            background: #111; color: #fff; border: 1px solid #444;
-            border-radius: 4px; padding: 2px 8px; font-family: inherit; font-size: 12px;
-            cursor: pointer; outline: none;
-        }
+        #fps-select { background: #111; color: #fff; border: 1px solid #444; border-radius: 4px; padding: 2px 8px; font-family: inherit; font-size: 12px; cursor: pointer; outline: none; }
 
         .level-grid-container {
             flex: 1; width: 100%; overflow-y: auto; 
-            padding: 5px 20px 80px 20px;
-            box-sizing: border-box; display: flex; justify-content: center;
+            padding: 5px 20px 80px 20px; box-sizing: border-box; display: flex; justify-content: center;
             -webkit-overflow-scrolling: touch;
         }
 
         .level-grid {
-            display: grid; 
-            grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
-            gap: 25px; row-gap: 45px;
-            width: 100%; max-width: 1100px; padding-bottom: 40px;
+            display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+            gap: 25px; row-gap: 45px; width: 100%; max-width: 1100px; padding-bottom: 40px;
         }
 
         .level-card {
@@ -105,12 +119,7 @@
             border: 1px solid #222; aspect-ratio: 16 / 9; min-height: 120px;
             box-shadow: 0 4px 10px rgba(0,0,0,0.5);
         }
-        
-        .level-card:hover, .level-card:active { 
-            transform: translateY(-2px); border-color: #ff8800; 
-            box-shadow: 0 5px 20px rgba(255, 100, 0, 0.2); z-index: 10; 
-        }
-
+        .level-card:hover, .level-card:active { transform: translateY(-2px); border-color: #ff8800; box-shadow: 0 5px 20px rgba(255, 100, 0, 0.2); z-index: 10; }
         .card-image { width: 100%; height: 100%; object-fit: cover; opacity: 0.8; transition: opacity 0.2s; background: #222; }
         .level-card:hover .card-image { opacity: 1; }
 
@@ -121,45 +130,38 @@
             box-shadow: 0 2px 4px rgba(0,0,0,0.8);
         }
         
-        /* Record Label */
-        .card-record {
-            position: absolute; top: 8px; left: 8px; background: rgba(0,0,0,0.6);
-            color: #ffcc00; padding: 2px 6px; border-radius: 4px; font-size: 10px; font-weight: bold;
-            z-index: 3; border: 1px solid #554400;
+        /* LIVE & TROPHY UI */
+        .card-live {
+            position: absolute; bottom: 32px; left: 8px; background: rgba(0,0,0,0.7);
+            color: #00ff00; padding: 2px 6px; border-radius: 4px; font-size: 10px; font-weight: bold;
+            z-index: 3; display: flex; align-items: center; gap: 4px; border: 1px solid #005500;
         }
-        
-        .diff-Tutorial { color: #ffffff; border-color: #ffffff; background: #0055ff; }
-        .diff-Easy { color: #00ff88; border-color: #00ff88; }
-        .diff-Medium { color: #ffcc00; border-color: #ffcc00; }
-        .diff-Hard { color: #ff3333; border-color: #ff3333; }
-        .diff-Insane { color: #bf00ff; border-color: #bf00ff; }
-        .diff-Expert { color: #00ccff; border-color: #00ccff; }
-        .diff-Master { color: #ff0099; border-color: #ff0099; }
-        .diff-Godlike { color: #ffffff; border-color: #ffffff; box-shadow: 0 0 8px #ff0000; text-shadow: 0 0 5px #ff0000; }
+        .live-dot { width: 6px; height: 6px; background: #00ff00; border-radius: 50%; animation: blink 1.5s infinite; }
+        @keyframes blink { 0% { opacity: 1; } 50% { opacity: 0.3; } 100% { opacity: 1; } }
+
+        .card-trophy-status {
+            position: absolute; top: 8px; left: 8px; background: rgba(0,0,0,0.7);
+            color: #ffcc00; padding: 2px 6px; border-radius: 4px; font-size: 10px; font-weight: bold;
+            z-index: 3; border: 1px solid #554400; display: flex; align-items: center; gap: 4px;
+        }
+        .trophy-val { color: #aaa; font-size: 9px; margin-left: 3px; }
+        .completed-mark { color: #00ff00; font-weight: 900; margin-left: 5px; text-shadow: 0 0 5px #00ff00; }
 
         .card-title-overlay {
             position: absolute; bottom: 8px; left: 10px; color: #fff; 
             font-size: 15px; font-weight: 800; letter-spacing: 0.5px;
             z-index: 3; max-width: 90%; 
-            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-            text-shadow: 0 2px 4px rgba(0,0,0,1);
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-shadow: 0 2px 4px rgba(0,0,0,1);
         }
-        
         .card-gradient {
             position: absolute; bottom: 0; left: 0; width: 100%; height: 80%;
-            background: linear-gradient(to top, rgba(0,0,0,0.95) 0%, rgba(0,0,0,0.5) 50%, transparent 100%); 
-            pointer-events: none; z-index: 2;
+            background: linear-gradient(to top, rgba(0,0,0,0.95) 0%, rgba(0,0,0,0.5) 50%, transparent 100%); pointer-events: none; z-index: 2;
         }
 
-        /* --- GAME UI (HUD) --- */
-        #game-ui { 
-            position: absolute; top: 0; left: 0; width: 100%; height: 100%; 
-            pointer-events: none; display: none; 
-        }
+        #game-ui { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; display: none; }
         
-        /* Botón Salir */
         #btn-exit {
-            position: absolute; top: 20px; right: 20px; pointer-events: auto;
+            position: absolute; top: 60px; right: 20px; pointer-events: auto;
             width: 40px; height: 40px; border-radius: 50%; background: rgba(255, 0, 0, 0.6);
             border: 2px solid rgba(255,255,255,0.5); color: white; font-weight: bold; font-size: 20px;
             display: flex; justify-content: center; align-items: center; cursor: pointer;
@@ -167,50 +169,60 @@
         }
         #btn-exit:active { transform: scale(0.9); background: rgba(255,0,0,0.8); }
 
-        /* Barra de Progreso */
-        #progress-container {
-            position: absolute; top: 20px; left: 20px;
-            display: flex; flex-direction: column; align-items: flex-start; gap: 5px;
-        }
-        #progress-text {
-            font-size: 24px; font-weight: 900; color: #fff; 
-            text-shadow: 0 2px 4px rgba(0,0,0,0.8); font-style: italic;
-        }
-        #level-name-hud {
-            font-size: 12px; color: rgba(255,255,255,0.7); text-transform: uppercase;
-        }
+        #progress-container { position: absolute; top: 20px; left: 20px; display: flex; flex-direction: column; align-items: flex-start; gap: 5px; }
+        #progress-text { font-size: 24px; font-weight: 900; color: #fff; text-shadow: 0 2px 4px rgba(0,0,0,0.8); font-style: italic; }
+        #level-name-hud { font-size: 12px; color: rgba(255,255,255,0.7); text-transform: uppercase; }
+        #controls-hint { position: absolute; bottom: 20px; width: 100%; text-align: center; font-size: 12px; color: rgba(255,255,255,0.4); text-transform: uppercase; letter-spacing: 1px; }
 
-        #controls-hint { 
-            position: absolute; bottom: 20px; width: 100%; text-align: center; 
-            font-size: 12px; color: rgba(255,255,255,0.4); text-transform: uppercase; letter-spacing: 1px; 
+        /* --- RANKING MODAL --- */
+        #ranking-modal {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 180;
+            background: rgba(0,0,0,0.9); backdrop-filter: blur(5px);
+            display: none; flex-direction: column; align-items: center; justify-content: center;
         }
+        .ranking-box {
+            background: #151515; border: 1px solid #333; border-radius: 10px;
+            width: 90%; max-width: 400px; max-height: 80%; overflow: hidden;
+            display: flex; flex-direction: column;
+        }
+        .ranking-header {
+            background: #222; padding: 15px; text-align: center; color: #ffcc00; font-weight: bold; font-size: 20px;
+            border-bottom: 1px solid #333; display: flex; justify-content: space-between; align-items: center;
+        }
+        .ranking-list {
+            overflow-y: auto; flex: 1; padding: 10px;
+        }
+        .rank-item {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 10px; border-bottom: 1px solid #222; color: #eee;
+        }
+        .rank-item:last-child { border-bottom: none; }
+        .rank-pos { width: 30px; font-weight: bold; color: #555; }
+        .rank-1 .rank-pos { color: #ffd700; text-shadow: 0 0 5px #ffd700; }
+        .rank-2 .rank-pos { color: #c0c0c0; }
+        .rank-3 .rank-pos { color: #cd7f32; }
+        .rank-name { flex: 1; text-align: left; }
+        .rank-score { font-weight: bold; color: #ffcc00; display: flex; align-items: center; gap: 5px; }
 
-        /* --- MODALES --- */
+        /* --- MODALES JUEGO --- */
         .modal-screen {
             position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
             background: rgba(15, 15, 20, 0.95); padding: 30px 50px; border-radius: 15px;
             border: 1px solid #333; text-align: center; pointer-events: auto;
             display: flex; flex-direction: column; gap: 15px; min-width: 280px;
-            box-shadow: 0 10px 40px rgba(0,0,0,0.8);
-            backdrop-filter: blur(10px);
+            box-shadow: 0 10px 40px rgba(0,0,0,0.8); backdrop-filter: blur(10px);
         }
         .win-style { border-top: 3px solid #00ff00; }
         .fail-style { border-top: 3px solid #ff0000; }
 
         button.action-btn {
-            background: #ff4400; color: #fff; border: none;
-            padding: 12px 30px; font-size: 16px; font-weight: bold; cursor: pointer; border-radius: 6px;
-            text-transform: uppercase; letter-spacing: 1px;
+            background: #ff4400; color: #fff; border: none; padding: 12px 30px; font-size: 14px; font-weight: bold;
+            cursor: pointer; border-radius: 6px; text-transform: uppercase; letter-spacing: 1px;
             transition: background 0.2s, transform 0.1s;
         }
         button.action-btn:hover { background: #ff6600; }
         button.action-btn:active { transform: scale(0.98); }
-        
-        button.secondary-btn {
-            background: transparent; border: 1px solid #444; color: #aaa;
-            padding: 10px; font-size: 12px; border-radius: 6px; cursor: pointer;
-            text-transform: uppercase; margin-top: 5px;
-        }
+        button.secondary-btn { background: transparent; border: 1px solid #444; color: #aaa; padding: 10px; font-size: 12px; border-radius: 6px; cursor: pointer; text-transform: uppercase; margin-top: 5px; }
         button.secondary-btn:hover { border-color: #777; color: #fff; }
 
         .control-zone { position: absolute; top: 0; height: 100%; width: 50%; z-index: 10; pointer-events: auto; }
@@ -228,10 +240,38 @@
 </head>
 <body>
 
+    <!-- PANTALLA LOGIN -->
+    <div id="login-screen">
+        <div id="login-box">
+            <h1 style="color:#ff4400; margin:0 0 5px 0; font-style:italic;">FIREDODO MMO</h1>
+            <p style="color:#666; font-size:12px; margin-bottom:20px;">MULTIJUGAOR GLOBAL</p>
+            
+            <input type="text" id="username-input" class="login-input" placeholder="Usuario" maxlength="10">
+            <input type="password" id="password-input" class="login-input" placeholder="Contraseña">
+            
+            <div class="login-row">
+                <button class="action-btn" id="btn-signin" style="flex:1; background:#00aa44;">ENTRAR</button>
+                <button class="action-btn" id="btn-signup" style="flex:1; background:#0066cc;">CREAR</button>
+            </div>
+            <div id="login-error" class="error-msg"></div>
+        </div>
+    </div>
+
     <div id="landscape-warning">
         <h1 style="font-size: 24px; margin-bottom: 10px;">Gira tu dispositivo</h1>
         <div style="font-size: 40px; animation: rot 2s infinite;">↻</div>
         <style>@keyframes rot { 0% { transform: rotate(0deg); } 25% { transform: rotate(90deg); } 100% { transform: rotate(90deg); } }</style>
+    </div>
+
+    <!-- BARRA USUARIO -->
+    <div id="user-bar" class="hidden">
+        <div class="user-name" id="display-name">Player</div>
+        <div class="stat-display">
+            <span>🪙</span> <span id="display-coins">0</span>
+        </div>
+        <div class="stat-display" style="margin-left:10px;">
+            <span class="trophy-icon">🏆</span> <span id="display-trophies">0</span>
+        </div>
     </div>
 
     <div id="left-zone" class="control-zone"></div>
@@ -245,21 +285,37 @@
 
     <div id="ui-layer">
         <!-- MENU -->
-        <div id="level-selector">
+        <div id="level-selector" class="hidden">
             <div class="selector-header">
                 <h1>FIREDODO</h1>
-                <div class="settings-panel">
-                    <span class="settings-label">FPS:</span>
-                    <select id="fps-select">
-                        <option value="30">30</option>
-                        <option value="60" selected>60</option>
-                        <option value="120">120</option>
-                        <option value="0">MAX</option>
-                    </select>
+                <div class="header-controls">
+                    <button class="action-btn" id="btn-ranking" style="font-size:12px; padding:8px 15px; background:#333; border:1px solid #555;">🏆 RANKING</button>
+                    <div class="settings-panel">
+                        <span class="settings-label">FPS:</span>
+                        <select id="fps-select">
+                            <option value="30">30</option>
+                            <option value="60" selected>60</option>
+                            <option value="120">120</option>
+                            <option value="0">MAX</option>
+                        </select>
+                    </div>
                 </div>
             </div>
             <div class="level-grid-container">
                 <div class="level-grid" id="grid-container"></div>
+            </div>
+        </div>
+
+        <!-- RANKING MODAL -->
+        <div id="ranking-modal">
+            <div class="ranking-box">
+                <div class="ranking-header">
+                    <span>TOP 10 MUNDIAL</span>
+                    <button id="btn-close-ranking" style="background:none; border:none; color:#fff; cursor:pointer; font-size:20px;">✕</button>
+                </div>
+                <div class="ranking-list" id="ranking-list-content">
+                    <!-- Items -->
+                </div>
             </div>
         </div>
 
@@ -269,9 +325,7 @@
                 <div id="progress-text">0%</div>
                 <div id="level-name-hud">Level 1</div>
             </div>
-            <!-- Botón X para salir -->
-            <div id="btn-exit" onclick="showMenu()">✕</div>
-
+            <div id="btn-exit">✕</div>
             <div id="controls-hint">Toque Lados para Girar</div>
         </div>
 
@@ -279,710 +333,561 @@
         <div id="game-over" class="modal-screen fail-style hidden">
             <h2 style="color: #ff4444; margin:0; font-size: 32px;">FAIL</h2>
             <p id="fail-reason" style="color:#bbb; margin:5px 0 20px 0; font-size: 14px;">Has caído</p>
-            <button class="action-btn" onclick="restartLevel()">Reintentar</button>
-            <button class="secondary-btn" onclick="showMenu()">Menú Principal</button>
+            <button class="action-btn" id="btn-retry">Reintentar</button>
+            <button class="secondary-btn" id="btn-menu-fail">Menú Principal</button>
         </div>
 
         <div id="level-complete" class="modal-screen win-style hidden">
             <h2 style="color: #00ff00; margin:0; font-size: 32px;">¡NIVEL COMPLETADO!</h2>
-            <p style="color:#bbb; margin:5px 0 20px 0; font-size: 14px;">Buen trabajo</p>
-            <button class="action-btn" onclick="nextLevel()">Siguiente</button>
-            <button class="secondary-btn" onclick="showMenu()">Menú Principal</button>
+            <p id="win-rewards" style="color:#bbb; margin:5px 0 20px 0; font-size: 14px;">+50 Monedas</p>
+            <button class="action-btn" id="btn-next">Siguiente</button>
+            <button class="secondary-btn" id="btn-menu-win">Menú Principal</button>
         </div>
     </div>
 
-    <script>
-        // ======================================================
-        // SISTEMA DE AUDIO
-        // ======================================================
-        const audios = {
-            bgm: new Audio('https://logise1.github.io/firedodo/bgm.mp3'),
-            win: new Audio('https://logise1.github.io/firedodo/win.mp3'),
-            death: new Audio('https://logise1.github.io/firedodo/death.mp3')
+    <!-- LOGICA COMPLETA -->
+    <script type="module">
+        import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
+        import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
+        import { getDatabase, ref, set, onValue, onDisconnect, update, get, query, orderByChild, limitToLast } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js';
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyCJx5waLuWR_D0Z204ewNUKjM8qwJ2uwIY",
+            authDomain: "firedodo.firebaseapp.com",
+            databaseURL: "https://firedodo-default-rtdb.europe-west1.firebasedatabase.app",
+            projectId: "firedodo",
+            storageBucket: "firedodo.firebasestorage.app",
+            messagingSenderId: "1099455402326",
+            appId: "1:1099455402326:web:33c580e8dc003395de46f7",
+            measurementId: "G-D1FW1BJRDS"
         };
 
-        audios.bgm.loop = true;
-        audios.bgm.volume = 0.6;
-        audios.win.volume = 0.8;
-        audios.death.volume = 0.8;
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getDatabase(app);
 
-        function playBGM() {
-            audios.bgm.currentTime = 0;
-            audios.bgm.play().catch(e => console.log("Interacción de usuario requerida para audio"));
-        }
+        // VARIABLES GLOBALES
+        let currentUser = null;
+        let userData = { name: "Player", coins: 0, trophies: 0, completed: {} };
+        let otherPlayers = {}; 
+        let activePlayerCount = {};
+        let leaderboard = [];
 
-        function stopBGM() {
-            audios.bgm.pause();
-            audios.bgm.currentTime = 0;
-        }
+        // --- FUNCIONES DE AUTH ---
+        function getEmail(user) { return `${user.toLowerCase()}@firedodo.email`; }
 
-        function playSound(type) {
-            if(audios[type]) {
-                audios[type].currentTime = 0;
-                audios[type].play().catch(e => {});
+        async function handleAuth(isRegister) {
+            const user = document.getElementById('username-input').value.trim();
+            const pass = document.getElementById('password-input').value.trim();
+            const errorDiv = document.getElementById('login-error');
+            
+            if(user.length < 3 || pass.length < 6) {
+                errorDiv.innerText = "Usuario min 3 chars, Pass min 6";
+                return;
+            }
+            
+            errorDiv.innerText = "Conectando...";
+            const email = getEmail(user);
+
+            try {
+                let cred;
+                if(isRegister) {
+                    cred = await createUserWithEmailAndPassword(auth, email, pass);
+                    // Crear perfil inicial
+                    await set(ref(db, 'users/' + cred.user.uid), {
+                        name: user,
+                        coins: 0,
+                        trophies: 0,
+                        currentLevel: -1,
+                        completed: {}
+                    });
+                } else {
+                    cred = await signInWithEmailAndPassword(auth, email, pass);
+                }
+            } catch (e) {
+                console.error(e);
+                if(e.code === 'auth/email-already-in-use') errorDiv.innerText = "Ese usuario ya existe.";
+                else if(e.code === 'auth/invalid-credential') errorDiv.innerText = "Contraseña incorrecta.";
+                else errorDiv.innerText = "Error: " + e.code;
             }
         }
 
-        // ======================================================
-        // GENERADOR DE TEXTURAS
-        // ======================================================
-        function createTexture(width, height, drawFn) {
-            const cvs = document.createElement('canvas');
-            cvs.width = width; cvs.height = height;
-            const ctx = cvs.getContext('2d');
-            drawFn(ctx, width, height);
-            return cvs.toDataURL();
-        }
+        document.getElementById('btn-signin').onclick = () => handleAuth(false);
+        document.getElementById('btn-signup').onclick = () => handleAuth(true);
 
-        // Skybox Generator Mejorado con Tipos
-        function generateSkybox(config) {
-            const { type, c1, c2, density } = config;
-            const textures = [];
-            
-            const drawSky = (ctx, w, h) => {
-                // Fondo degradado
-                const grad = ctx.createLinearGradient(0, 0, 0, h);
-                grad.addColorStop(0, c1);
-                grad.addColorStop(1, c2);
-                ctx.fillStyle = grad; 
-                ctx.fillRect(0, 0, w, h);
-
-                // Elementos según tipo
-                if (type === 'stars') {
-                    ctx.fillStyle = '#fff';
-                    for(let i=0; i<density; i++) {
-                        ctx.globalAlpha = Math.random() * 0.8 + 0.2;
-                        const x = Math.random()*w;
-                        const y = Math.random()*h;
-                        const s = Math.random()*2;
-                        ctx.fillRect(x,y,s,s);
+        onAuthStateChanged(auth, async (user) => {
+            if (user) {
+                currentUser = user;
+                const userRef = ref(db, 'users/' + user.uid);
+                
+                // Escuchar cambios en mi propio usuario (Monedas, trofeos)
+                onValue(userRef, (snap) => {
+                    if(snap.exists()) {
+                        userData = snap.val();
+                        if(!userData.completed) userData.completed = {};
+                        document.getElementById('display-name').innerText = userData.name;
+                        document.getElementById('display-coins').innerText = userData.coins || 0;
+                        document.getElementById('display-trophies').innerText = userData.trophies || 0;
+                        if(!isGameActive) updateMenuUI(); // Actualizar checks de completado
                     }
-                } else if (type === 'grid') {
-                    ctx.strokeStyle = 'rgba(255,255,255,0.1)';
-                    ctx.lineWidth = 2;
-                    // Lineas verticales
-                    for(let i=0; i<w; i+=40) {
-                        ctx.beginPath(); ctx.moveTo(i,0); ctx.lineTo(i,h); ctx.stroke();
-                    }
-                    // Horizontales
-                    for(let i=0; i<h; i+=40) {
-                        ctx.beginPath(); ctx.moveTo(0,i); ctx.lineTo(w,i); ctx.stroke();
-                    }
-                } else if (type === 'digital') {
-                    ctx.fillStyle = '#00ff00';
-                    for(let i=0; i<density; i++) {
-                        ctx.globalAlpha = Math.random() * 0.3;
-                        const x = Math.floor(Math.random() * w / 20) * 20;
-                        const y = Math.random() * h;
-                        const len = Math.random() * 100;
-                        ctx.fillRect(x, y, 2, len);
-                    }
-                }
-                // 'gradient' solo usa el fondo, no añade nada extra
-            };
+                });
 
-            const dataUrl = createTexture(512, 512, drawSky);
-            for(let i=0; i<6; i++) textures.push(dataUrl);
-            return textures;
-        }
+                document.getElementById('login-screen').style.display = 'none';
+                document.getElementById('user-bar').classList.remove('hidden');
 
-        const Assets = { floor: null, player: null };
+                update(userRef, { currentLevel: -1, lastActive: Date.now() });
+                onDisconnect(userRef).update({ currentLevel: -1 });
 
-        function initAssets() {
-            Assets.floor = createTexture(512, 512, (ctx, w, h) => {
-                ctx.fillStyle = '#222'; ctx.fillRect(0,0,w,h);
-                ctx.strokeStyle = '#444'; ctx.lineWidth = 4;
-                for(let i=0; i<=4; i++) {
-                    let p = i * (w/4); ctx.moveTo(p, 0); ctx.lineTo(p, h); ctx.moveTo(0, p); ctx.lineTo(w, p);
-                }
-                ctx.stroke();
-                ctx.strokeStyle = '#fff'; ctx.lineWidth = 8; ctx.strokeRect(0,0,w,h);
+                startNetworkListeners();
+                showMenu();
+            }
+        });
+
+        function startNetworkListeners() {
+            // 1. Escuchar Jugadores Activos para Fantasmas
+            onValue(ref(db, 'users'), (snap) => {
+                const data = snap.val() || {};
+                activePlayerCount = {};
+                
+                Object.keys(data).forEach(uid => {
+                    if(uid === currentUser.uid) return;
+                    const p = data[uid];
+                    
+                    // Contar jugadores por nivel
+                    if(p.currentLevel !== undefined && p.currentLevel >= -1) {
+                        activePlayerCount[p.currentLevel] = (activePlayerCount[p.currentLevel] || 0) + 1;
+                    }
+
+                    // Fantasmas
+                    if(isGameActive && p.currentLevel === currentLevel) {
+                        updateGhost(uid, p);
+                    } else {
+                        removeGhost(uid);
+                    }
+                });
+
+                if(!isGameActive) updateMenuUI();
             });
 
-            Assets.player = createTexture(128, 128, (ctx, w, h) => {
-                ctx.fillStyle = '#ff6600'; ctx.fillRect(0,0,w,h);
-                ctx.fillStyle = '#fff'; 
-                ctx.beginPath(); ctx.arc(40, 40, 15, 0, Math.PI*2); ctx.fill();
-                ctx.beginPath(); ctx.arc(88, 40, 15, 0, Math.PI*2); ctx.fill();
-                ctx.fillStyle = '#000';
-                ctx.beginPath(); ctx.arc(40, 40, 5, 0, Math.PI*2); ctx.fill();
-                ctx.beginPath(); ctx.arc(88, 40, 5, 0, Math.PI*2); ctx.fill();
-                ctx.lineWidth = 6; ctx.beginPath(); ctx.arc(64, 80, 30, 0, Math.PI, false); ctx.stroke();
-                ctx.lineWidth = 10; ctx.strokeStyle = '#882200'; ctx.strokeRect(0,0,w,h);
+            // 2. Ranking Global (Top 10 por Trofeos)
+            const rankingQuery = query(ref(db, 'users'), orderByChild('trophies'), limitToLast(10));
+            onValue(rankingQuery, (snap) => {
+                leaderboard = [];
+                snap.forEach(child => {
+                    leaderboard.unshift(child.val()); // Reverse order (Max to Min)
+                });
             });
         }
 
-        // ======================================================
-        // LÓGICA DEL JUEGO
-        // ======================================================
+        // --- UI RANKING ---
+        document.getElementById('btn-ranking').onclick = () => {
+            const list = document.getElementById('ranking-list-content');
+            list.innerHTML = '';
+            leaderboard.forEach((u, i) => {
+                const div = document.createElement('div');
+                div.className = `rank-item rank-${i+1}`;
+                div.innerHTML = `
+                    <div class="rank-pos">#${i+1}</div>
+                    <div class="rank-name">${u.name}</div>
+                    <div class="rank-score">🏆 ${u.trophies || 0}</div>
+                `;
+                list.appendChild(div);
+            });
+            document.getElementById('ranking-modal').style.display = 'flex';
+        };
+        document.getElementById('btn-close-ranking').onclick = () => {
+            document.getElementById('ranking-modal').style.display = 'none';
+        };
+
+        // --- GHOST SYSTEM ---
+        const ghostMat = new THREE.MeshBasicMaterial({ color: 0x00ff00, transparent: true, opacity: 0.3, wireframe: true });
+        const ghostGeo = new THREE.BoxGeometry(3, 1, 3);
+
+        function updateGhost(uid, data) {
+            if(!scene) return;
+            if(!otherPlayers[uid]) {
+                const mesh = new THREE.Mesh(ghostGeo, ghostMat);
+                scene.add(mesh);
+                otherPlayers[uid] = { mesh: mesh, targetPos: new THREE.Vector3(), targetRot: 0 };
+            }
+            const ghost = otherPlayers[uid];
+            if(data.pos) {
+                ghost.targetPos.set(data.pos.x, data.pos.y, data.pos.z);
+                ghost.targetRot = data.rot || 0;
+            }
+        }
+
+        function removeGhost(uid) {
+            if(otherPlayers[uid]) {
+                scene.remove(otherPlayers[uid].mesh);
+                delete otherPlayers[uid];
+            }
+        }
+
+        // --- JUEGO Y LÓGICA LOCAL ---
+        
         let scene, camera, renderer, clock;
         let player, discMesh;
         let pathSegments = [], obstacles = [], particles = [];
         let isGameActive = false;
         let currentLevel = 0;
-        let playerVelY = 0;
         let input = { l: false, r: false };
-        let raycaster, downVec; 
         let maxFPS = 60; 
         let lastFrameTime = 0;
         let timeScale = 1.0;
         let textureLoader, cubeLoader;
         let floorTexture, playerTexture;
-
         let totalLevelLength = 0; 
+        let lastNetworkUpdate = 0;
 
-        const _ = {
-            S: (len) => ({ t:'S', len }),
-            T: (dir, f, len) => ({ t:'T', dir, f, len }), 
-            V: (slope, len) => ({ t:'V', s:slope, len }),
-            W: (act, len) => ({ t:'W', action: act, len })
-        };
+        window.startLevel = startLevel;
+        window.showMenu = showMenu;
+        window.restartLevel = restartLevel;
+        window.nextLevel = nextLevel;
 
-        const CONFIG = {
-            speed: 90.0,
-            turnSpeed: 2.2, 
-            gravity: 180.0,
-            pathWidth: 30,
-            cameraDist: 24,
-            cameraHeight: 18
-        };
+        document.getElementById('btn-exit').onclick = showMenu;
+        document.getElementById('btn-retry').onclick = restartLevel;
+        document.getElementById('btn-menu-fail').onclick = showMenu;
+        document.getElementById('btn-next').onclick = nextLevel;
+        document.getElementById('btn-menu-win').onclick = showMenu;
 
-        let currentCamHeight = CONFIG.cameraHeight;
-        let currentCamDist = CONFIG.cameraDist;
-
-        function mulberry32(a) {
-            return function() {
-              var t = a += 0x6D2B79F5;
-              t = Math.imul(t ^ t >>> 15, t | 1);
-              t ^= t + Math.imul(t ^ t >>> 7, t | 61);
-              return ((t ^ t >>> 14) >>> 0) / 4294967296;
-            }
+        function createTexture(width, height, drawFn) {
+            const cvs = document.createElement('canvas'); cvs.width=width; cvs.height=height;
+            const ctx = cvs.getContext('2d'); drawFn(ctx, width, height); return cvs.toDataURL();
+        }
+        
+        function generateSkybox(config) {
+            const { type, c1, c2, density } = config;
+            const textures = [];
+            const drawSky = (ctx, w, h) => {
+                const grad = ctx.createLinearGradient(0, 0, 0, h);
+                grad.addColorStop(0, c1); grad.addColorStop(1, c2);
+                ctx.fillStyle = grad; ctx.fillRect(0, 0, w, h);
+                if (type === 'stars') {
+                    ctx.fillStyle = '#fff';
+                    for(let i=0; i<density; i++) { ctx.globalAlpha = Math.random() * 0.8 + 0.2; ctx.fillRect(Math.random()*w, Math.random()*h, 2, 2); }
+                } else if (type === 'grid') {
+                    ctx.strokeStyle = 'rgba(255,255,255,0.1)'; ctx.lineWidth = 2;
+                    for(let i=0; i<w; i+=40) { ctx.beginPath(); ctx.moveTo(i,0); ctx.lineTo(i,h); ctx.stroke(); }
+                    for(let i=0; i<h; i+=40) { ctx.beginPath(); ctx.moveTo(0,i); ctx.lineTo(w,i); ctx.stroke(); }
+                } else if (type === 'digital') {
+                    ctx.fillStyle = '#00ff00';
+                    for(let i=0; i<density; i++) { ctx.globalAlpha = Math.random() * 0.3; ctx.fillRect(Math.floor(Math.random() * w / 20) * 20, Math.random() * h, 2, Math.random() * 100); }
+                }
+            };
+            const dataUrl = createTexture(512, 512, drawSky);
+            for(let i=0; i<6; i++) textures.push(dataUrl);
+            return textures;
         }
 
-        // --- NIVELES CONFIGURADOS ---
+        const _ = { S: l=>({t:'S',len:l}), T:(d,f,l)=>({t:'T',dir:d,f,len:l}), V:(s,l)=>({t:'V',s,len:l}), W:(a,l)=>({t:'W',action:a,len:l}) };
+        
+        // TROFEOS ASIGNADOS POR DIFICULTAD
         const LEVELS = [
-            { 
-                id:0, name:"Tutorial", diff:"Tutorial", 
-                sky: { type: 'stars', c1: '#000022', c2: '#001133', density: 50 },
-                theme: { floor:0x444444, fog:0x101020, obs:0xffffff, shape:'box', filter:'#0055ff' }, 
-                data: [_.S(50), _.W('right', 30), _.T(1, 0.8, 40), _.S(40), _.W('left', 30), _.T(-1, 0.8, 40), _.S(60), _.V(0.3, 60), _.V(-0.3, 80), _.S(100)] 
-            },
-            { id:1, name:"Space Walk", diff:"Easy", sky: { type: 'stars', c1: '#000000', c2: '#000020', density: 200 }, theme: { floor:0xaaaaaa, fog:0x000010, obs:0x00ffff, shape:'box', filter:'#00ffff' }, data: [_.S(80), _.T(-1, 0.3, 60), _.S(60), _.T(1, 0.3, 60), _.S(100)] },
-            { id:2, name:"Candy Land", diff:"Easy", sky: { type: 'gradient', c1: '#ffccdd', c2: '#99ccff', density: 0 }, theme: { floor:0xffdddd, fog:0x664455, obs:0xff00aa, shape:'cylinder', filter:'#ff00aa' }, data: [_.S(60), _.T(1, 0.5, 80), _.S(40), _.T(-1, 0.5, 80), _.S(120)] },
-            { id:3, name:"Toxic Waste", diff:"Easy", sky: { type: 'grid', c1: '#002200', c2: '#004400', density: 50 }, theme: { floor:0xddffdd, fog:0x002200, obs:0x00ff00, shape:'box', filter:'#00ff00' }, data: [_.S(40), _.V(0.2, 100), _.S(40), _.T(-1, 0.5, 60), _.V(0.2, 100), _.S(80)] },
-            { id:4, name:"Solar", diff:"Medium", sky: { type: 'gradient', c1: '#442200', c2: '#ff8800', density: 0 }, theme: { floor:0xffffcc, fog:0x442200, obs:0xffaa00, shape:'cone', filter:'#ffaa00' }, data: [_.S(40), _.T(1, 0.8, 40), _.T(-1, 0.8, 40), _.T(1, 0.8, 40), _.T(-1, 0.8, 40), _.S(80)] },
-            { id:5, name:"Hyper Speed", diff:"Medium", sky: { type: 'stars', c1: '#000044', c2: '#000088', density: 300 }, theme: { floor:0xccccff, fog:0x000033, obs:0x4444ff, shape:'cylinder', filter:'#4444ff' }, data: [_.S(150), _.T(-1, 0.2, 100), _.S(200)] },
-            { id:6, name:"Deep Sea", diff:"Medium", sky: { type: 'gradient', c1: '#000022', c2: '#001144', density: 0 }, theme: { floor:0xaaffff, fog:0x001122, obs:0x00aaaa, shape:'box', filter:'#00aaaa' }, data: [_.S(40), _.V(0.1, 80), _.S(40), _.V(-0.1, 80), _.S(80)] },
-            { id:7, name:"Red Alert", diff:"Hard", sky: { type: 'grid', c1: '#330000', c2: '#660000', density: 0 }, theme: { floor:0xffaaaa, fog:0x330000, obs:0xff0000, shape:'cone', filter:'#ff0000' }, data: [_.S(40), _.V(-0.3, 150), _.S(80), _.T(1, 0.4, 80), _.S(100)] },
-            { id:8, name:"Jungle", diff:"Hard", sky: { type: 'gradient', c1: '#00BFFF', c2: '#87CEFA', density: 0 }, theme: { floor:0xaaffaa, fog:0x004411, obs:0x008844, shape:'cylinder', filter:'#00ff44' }, data: [_.S(60), _.T(1, 1.0, 30), _.T(-1, 1.0, 30), _.T(1, 1.0, 30), _.T(-1, 1.0, 30), _.S(100)] },
-            { id:9, name:"Whiteout", diff:"Hard", sky: { type: 'gradient', c1: '#2F4F4F', c2: '#506070', density: 0 }, theme: { floor:0xffffff, fog:0x506070, obs:0x222222, shape:'box', filter:'#ffffff' }, data: [_.S(40), _.T(1, 1.0, 80), _.S(20), _.T(-1, 1.0, 80), _.S(60)] },
-            { id:10, name:"Void", diff:"Insane", sky: { type: 'stars', c1: '#000000', c2: '#110011', density: 500 }, theme: { floor:0x666666, fog:0x000000, obs:0xaa00ff, shape:'cone', filter:'#aa00ff' }, data: [_.V(0.3, 60), _.V(-0.3, 60), _.T(1, 0.8, 60), _.V(0.3, 60), _.V(-0.3, 60), _.S(80)] },
-            { id:11, name:"Rusty", diff:"Insane", sky: { type: 'gradient', c1: '#3e2723', c2: '#5d4037', density: 0 }, theme: { floor:0xddbb99, fog:0x3e2723, obs:0x884400, shape:'cylinder', filter:'#ff8800' }, data: [_.S(40), _.T(1, 0.5, 300), _.S(80)] },
-            { id:12, name:"Neon Nights", diff:"Insane", sky: { type: 'grid', c1: '#110022', c2: '#220044', density: 0 }, theme: { floor:0x333333, fog:0x110022, obs:0xff00ff, shape:'box', filter:'#ff00ff' }, data: [_.S(40), _.T(-1, 1.2, 80), _.S(40), _.T(1, 1.2, 80), _.S(80)] },
-            { id:13, name:"Glacier", diff:"Expert", sky: { type: 'gradient', c1: '#004466', c2: '#006699', density: 0 }, theme: { floor:0xddeeff, fog:0x004466, obs:0x0088ff, shape:'cone', filter:'#0088ff' }, data: [_.S(40), _.T(1, 1.5, 40), _.V(-0.2, 120), _.T(-1, 1.5, 40), _.S(80)] },
-            { id:14, name:"Matrix", diff:"Expert", sky: { type: 'digital', c1: '#000000', c2: '#001100', density: 100 }, theme: { floor:0x000000, fog:0x002200, obs:0x00ff00, shape:'box', filter:'#00ff00' }, data: [_.S(40), _.T(-1, 1.8, 40), _.T(1, 1.8, 40), _.V(0.4, 60), _.T(-1, 1.5, 80), _.S(120)] },
-            { id:15, name:"The End", diff:"Expert", sky: { type: 'stars', c1: '#111111', c2: '#333333', density: 100 }, theme: { floor:0x222222, fog:0x111111, obs:0xffffff, shape:'cylinder', filter:'#aaaaaa' }, data: [_.S(40), _.V(-0.4, 100), _.T(1, 1.5, 60), _.V(0.4, 100), _.T(-1, 1.5, 60), _.S(150)] },
-            { id:16, name:"Nebula", diff:"Hard", sky: { type: 'stars', c1: '#220022', c2: '#440044', density: 300 }, theme: { floor:0x220022, fog:0x110033, obs:0x00ffff, shape:'box', filter:'#ff00ff' }, data: [_.S(60), _.T(1, 2.0, 40), _.V(0.5, 80), _.T(-1, 2.0, 40), _.S(80)] },
-            { id:17, name:"Asteroid", diff:"Hard", sky: { type: 'stars', c1: '#111111', c2: '#222222', density: 500 }, theme: { floor:0x443322, fog:0x111111, obs:0x888888, shape:'cone', filter:'#aa5500' }, data: [_.V(-0.5, 100), _.T(1, 1.0, 20), _.T(-1, 1.0, 20), _.T(1, 1.0, 20), _.S(100)] },
-            { id:18, name:"Cyberpunk", diff:"Hard", sky: { type: 'grid', c1: '#222200', c2: '#444400', density: 0 }, theme: { floor:0x001122, fog:0x000022, obs:0xffff00, shape:'box', filter:'#ffff00' }, data: [_.S(40), _.T(1, 2.5, 40), _.V(-0.2, 50), _.T(-1, 2.5, 40), _.S(60)] },
-            { id:19, name:"Black Hole", diff:"Hard", sky: { type: 'gradient', c1: '#000000', c2: '#1a0033', density: 0 }, theme: { floor:0x111111, fog:0x050505, obs:0x5500aa, shape:'cylinder', filter:'#5500aa' }, data: [_.S(40), _.T(-1, 3.0, 20), _.T(1, 3.0, 20), _.V(0.6, 80), _.S(80)] },
-            { id:20, name:"Horizon", diff:"Hard", sky: { type: 'gradient', c1: '#ff9966', c2: '#ff5e62', density: 0 }, theme: { floor:0xffffff, fog:0xffeecc, obs:0xffaa00, shape:'box', filter:'#ffaa00' }, data: [_.S(200), _.V(0.1, 200), _.S(200)] },
-            { id:21, name:"Magma Core", diff:"Insane", sky: { type: 'grid', c1: '#330000', c2: '#ff0000', density: 0 }, theme: { floor:0x330000, fog:0x1a0000, obs:0xff4400, shape:'cone', filter:'#ff4400' }, data: [_.S(50), _.V(-0.4, 80), _.S(20), _.V(-0.4, 80), _.T(1, 1.5, 50), _.T(-1, 1.5, 50), _.S(100)] },
-            { id:22, name:"Serpent", diff:"Insane", sky: { type: 'digital', c1: '#001100', c2: '#002200', density: 50 }, theme: { floor:0x003300, fog:0x001100, obs:0x00ff44, shape:'cylinder', filter:'#00ff44' }, data: [_.S(40), _.T(1, 1.0, 20), _.T(-1, 1.0, 20), _.T(1, 1.0, 20), _.T(-1, 1.0, 20), _.T(1, 1.0, 20), _.T(-1, 1.0, 20), _.S(80)] },
-            { id:23, name:"Sky High", diff:"Expert", sky: { type: 'gradient', c1: '#0099ff', c2: '#ccffff', density: 0 }, theme: { floor:0xeeffff, fog:0xccffff, obs:0x0088ff, shape:'box', filter:'#00aaff' }, data: [_.V(0.5, 200), _.S(20), _.T(1, 2.5, 40), _.V(-0.5, 200), _.S(50)] },
-            { id:24, name:"Nightmare", diff:"Expert", sky: { type: 'stars', c1: '#050005', c2: '#110000', density: 50 }, theme: { floor:0x110011, fog:0x050005, obs:0xff0000, shape:'cone', filter:'#550000' }, data: [_.S(40), _.T(1, 3.0, 30), _.T(-1, 3.0, 30), _.V(-0.3, 100), _.T(1, 2.5, 50), _.S(120)] },
-            { id:25, name:"Quantum", diff:"Master", sky: { type: 'grid', c1: '#ffffff', c2: '#aaaaaa', density: 0 }, theme: { floor:0x222233, fog:0x000011, obs:0xffffff, shape:'box', filter:'#ffffff' }, data: [_.S(60), _.V(0.4, 100), _.T(-1, 3.0, 40), _.V(-0.4, 100), _.T(1, 3.0, 40), _.S(200)] },
-            { id:26, name:"Omega", diff:"Godlike", sky: { type: 'stars', c1: '#000000', c2: '#110022', density: 1000 }, theme: { floor:0x000000, fog:0x000000, obs:0xff00ff, shape:'cylinder', filter:'#ff00ff' }, data: [_.S(100), _.T(1, 1.0, 200), _.T(-1, 1.0, 200), _.S(150)] },
-            { id:27, name:"Inferno", diff:"Godlike", sky: { type: 'gradient', c1: '#220000', c2: '#441100', density: 0 }, theme: { floor:0x440000, fog:0x220000, obs:0xffaa00, shape:'cone', filter:'#ff2200' }, data: [_.V(-0.6, 150), _.T(1, 3.5, 30), _.V(0.6, 150), _.T(-1, 3.5, 30), _.S(100)] },
-            { id:28, name:"Zenith", diff:"Godlike", sky: { type: 'gradient', c1: '#ffffaa', c2: '#ffffff', density: 0 }, theme: { floor:0xffffee, fog:0xffffff, obs:0x444444, shape:'box', filter:'#ffffaa' }, data: [_.S(50), _.T(1, 2.0, 30), _.T(-1, 2.0, 30), _.V(0.2, 300), _.S(50)] },
-            { id:29, name:"Abyss", diff:"Godlike", sky: { type: 'stars', c1: '#000000', c2: '#000000', density: 5 }, theme: { floor:0x050505, fog:0x020202, obs:0x333333, shape:'box', filter:'#111111' }, data: [_.S(50), _.V(-0.7, 250), _.T(1, 4.0, 40), _.S(200)] },
-            { id:30, name:"Firedodo", diff:"Godlike", sky: { type: 'stars', c1: '#220000', c2: '#440000', density: 1000 }, theme: { floor:0xff4400, fog:0x220000, obs:0xffff00, shape:'cylinder', filter:'#ff4400' }, data: [_.S(100), _.T(-1, 2.0, 50), _.V(0.5, 100), _.T(1, 2.0, 50), _.V(-0.5, 100), _.T(-1, 3.0, 50), _.S(300)] }
+            { id:0, name:"Tutorial", trophies: 1, diff:"Tutorial", sky: { type: 'stars', c1: '#000022', c2: '#001133', density: 50 }, theme: { floor:0x444444, fog:0x101020, obs:0xffffff, shape:'box', filter:'#0055ff' }, data: [_.S(50), _.W('right', 30), _.T(1, 0.8, 40), _.S(40), _.W('left', 30), _.T(-1, 0.8, 40), _.S(60), _.V(0.3, 60), _.V(-0.3, 80), _.S(100)] },
+            { id:1, name:"Space Walk", trophies: 1, diff:"Easy", sky: { type: 'stars', c1: '#000000', c2: '#000020', density: 200 }, theme: { floor:0xaaaaaa, fog:0x000010, obs:0x00ffff, shape:'box', filter:'#00ffff' }, data: [_.S(80), _.T(-1, 0.3, 60), _.S(60), _.T(1, 0.3, 60), _.S(100)] },
+            { id:2, name:"Candy Land", trophies: 1, diff:"Easy", sky: { type: 'gradient', c1: '#ffccdd', c2: '#99ccff', density: 0 }, theme: { floor:0xffdddd, fog:0x664455, obs:0xff00aa, shape:'cylinder', filter:'#ff00aa' }, data: [_.S(60), _.T(1, 0.5, 80), _.S(40), _.T(-1, 0.5, 80), _.S(120)] },
+            { id:3, name:"Toxic Waste", trophies: 2, diff:"Easy", sky: { type: 'grid', c1: '#002200', c2: '#004400', density: 50 }, theme: { floor:0xddffdd, fog:0x002200, obs:0x00ff00, shape:'box', filter:'#00ff00' }, data: [_.S(40), _.V(0.2, 100), _.S(40), _.T(-1, 0.5, 60), _.V(0.2, 100), _.S(80)] },
+            { id:4, name:"Solar", trophies: 3, diff:"Medium", sky: { type: 'gradient', c1: '#442200', c2: '#ff8800', density: 0 }, theme: { floor:0xffffcc, fog:0x442200, obs:0xffaa00, shape:'cone', filter:'#ffaa00' }, data: [_.S(40), _.T(1, 0.8, 40), _.T(-1, 0.8, 40), _.T(1, 0.8, 40), _.T(-1, 0.8, 40), _.S(80)] },
+            { id:5, name:"Hyper Speed", trophies: 3, diff:"Medium", sky: { type: 'stars', c1: '#000044', c2: '#000088', density: 300 }, theme: { floor:0xccccff, fog:0x000033, obs:0x4444ff, shape:'cylinder', filter:'#4444ff' }, data: [_.S(150), _.T(-1, 0.2, 100), _.S(200)] },
+            { id:6, name:"Deep Sea", trophies: 4, diff:"Medium", sky: { type: 'gradient', c1: '#000022', c2: '#001144', density: 0 }, theme: { floor:0xaaffff, fog:0x001122, obs:0x00aaaa, shape:'box', filter:'#00aaaa' }, data: [_.S(40), _.V(0.1, 80), _.S(40), _.V(-0.1, 80), _.S(80)] },
+            { id:7, name:"Red Alert", trophies: 5, diff:"Hard", sky: { type: 'grid', c1: '#330000', c2: '#660000', density: 0 }, theme: { floor:0xffaaaa, fog:0x330000, obs:0xff0000, shape:'cone', filter:'#ff0000' }, data: [_.S(40), _.V(-0.3, 150), _.S(80), _.T(1, 0.4, 80), _.S(100)] },
+            { id:8, name:"Jungle", trophies: 5, diff:"Hard", sky: { type: 'gradient', c1: '#00BFFF', c2: '#87CEFA', density: 0 }, theme: { floor:0xaaffaa, fog:0x004411, obs:0x008844, shape:'cylinder', filter:'#00ff44' }, data: [_.S(60), _.T(1, 1.0, 30), _.T(-1, 1.0, 30), _.T(1, 1.0, 30), _.T(-1, 1.0, 30), _.S(100)] },
+            { id:9, name:"Whiteout", trophies: 6, diff:"Hard", sky: { type: 'gradient', c1: '#2F4F4F', c2: '#506070', density: 0 }, theme: { floor:0xffffff, fog:0x506070, obs:0x222222, shape:'box', filter:'#ffffff' }, data: [_.S(40), _.T(1, 1.0, 80), _.S(20), _.T(-1, 1.0, 80), _.S(60)] },
+            { id:10, name:"Void", trophies: 7, diff:"Insane", sky: { type: 'stars', c1: '#000000', c2: '#110011', density: 500 }, theme: { floor:0x666666, fog:0x000000, obs:0xaa00ff, shape:'cone', filter:'#aa00ff' }, data: [_.V(0.3, 60), _.V(-0.3, 60), _.T(1, 0.8, 60), _.V(0.3, 60), _.V(-0.3, 60), _.S(80)] },
+            { id:11, name:"Rusty", trophies: 8, diff:"Insane", sky: { type: 'gradient', c1: '#3e2723', c2: '#5d4037', density: 0 }, theme: { floor:0xddbb99, fog:0x3e2723, obs:0x884400, shape:'cylinder', filter:'#ff8800' }, data: [_.S(40), _.T(1, 0.5, 300), _.S(80)] },
+            { id:12, name:"Neon Nights", trophies: 9, diff:"Insane", sky: { type: 'grid', c1: '#110022', c2: '#220044', density: 0 }, theme: { floor:0x333333, fog:0x110022, obs:0xff00ff, shape:'box', filter:'#ff00ff' }, data: [_.S(40), _.T(-1, 1.2, 80), _.S(40), _.T(1, 1.2, 80), _.S(80)] },
+            { id:13, name:"Glacier", trophies: 10, diff:"Expert", sky: { type: 'gradient', c1: '#004466', c2: '#006699', density: 0 }, theme: { floor:0xddeeff, fog:0x004466, obs:0x0088ff, shape:'cone', filter:'#0088ff' }, data: [_.S(40), _.T(1, 1.5, 40), _.V(-0.2, 120), _.T(-1, 1.5, 40), _.S(80)] },
+            { id:14, name:"Matrix", trophies: 11, diff:"Expert", sky: { type: 'digital', c1: '#000000', c2: '#001100', density: 100 }, theme: { floor:0x000000, fog:0x002200, obs:0x00ff00, shape:'box', filter:'#00ff00' }, data: [_.S(40), _.T(-1, 1.8, 40), _.T(1, 1.8, 40), _.V(0.4, 60), _.T(-1, 1.5, 80), _.S(120)] },
+            { id:15, name:"The End", trophies: 12, diff:"Expert", sky: { type: 'stars', c1: '#111111', c2: '#333333', density: 100 }, theme: { floor:0x222222, fog:0x111111, obs:0xffffff, shape:'cylinder', filter:'#aaaaaa' }, data: [_.S(40), _.V(-0.4, 100), _.T(1, 1.5, 60), _.V(0.4, 100), _.T(-1, 1.5, 60), _.S(150)] },
+            { id:16, name:"Nebula", trophies: 13, diff:"Hard", sky: { type: 'stars', c1: '#220022', c2: '#440044', density: 300 }, theme: { floor:0x220022, fog:0x110033, obs:0x00ffff, shape:'box', filter:'#ff00ff' }, data: [_.S(60), _.T(1, 2.0, 40), _.V(0.5, 80), _.T(-1, 2.0, 40), _.S(80)] },
+            { id:17, name:"Asteroid", trophies: 13, diff:"Hard", sky: { type: 'stars', c1: '#111111', c2: '#222222', density: 500 }, theme: { floor:0x443322, fog:0x111111, obs:0x888888, shape:'cone', filter:'#aa5500' }, data: [_.V(-0.5, 100), _.T(1, 1.0, 20), _.T(-1, 1.0, 20), _.T(1, 1.0, 20), _.S(100)] },
+            { id:18, name:"Cyberpunk", trophies: 13, diff:"Hard", sky: { type: 'grid', c1: '#222200', c2: '#444400', density: 0 }, theme: { floor:0x001122, fog:0x000022, obs:0xffff00, shape:'box', filter:'#ffff00' }, data: [_.S(40), _.T(1, 2.5, 40), _.V(-0.2, 50), _.T(-1, 2.5, 40), _.S(60)] },
+            { id:19, name:"Black Hole", trophies: 13, diff:"Hard", sky: { type: 'gradient', c1: '#000000', c2: '#1a0033', density: 0 }, theme: { floor:0x111111, fog:0x050505, obs:0x5500aa, shape:'cylinder', filter:'#5500aa' }, data: [_.S(40), _.T(-1, 3.0, 20), _.T(1, 3.0, 20), _.V(0.6, 80), _.S(80)] },
+            { id:20, name:"Horizon", trophies: 13, diff:"Hard", sky: { type: 'gradient', c1: '#ff9966', c2: '#ff5e62', density: 0 }, theme: { floor:0xffffff, fog:0xffeecc, obs:0xffaa00, shape:'box', filter:'#ffaa00' }, data: [_.S(200), _.V(0.1, 200), _.S(200)] },
+            { id:21, name:"Magma Core", trophies: 14, diff:"Insane", sky: { type: 'grid', c1: '#330000', c2: '#ff0000', density: 0 }, theme: { floor:0x330000, fog:0x1a0000, obs:0xff4400, shape:'cone', filter:'#ff4400' }, data: [_.S(50), _.V(-0.4, 80), _.S(20), _.V(-0.4, 80), _.T(1, 1.5, 50), _.T(-1, 1.5, 50), _.S(100)] },
+            { id:22, name:"Serpent", trophies: 14, diff:"Insane", sky: { type: 'digital', c1: '#001100', c2: '#002200', density: 50 }, theme: { floor:0x003300, fog:0x001100, obs:0x00ff44, shape:'cylinder', filter:'#00ff44' }, data: [_.S(40), _.T(1, 1.0, 20), _.T(-1, 1.0, 20), _.T(1, 1.0, 20), _.T(-1, 1.0, 20), _.T(1, 1.0, 20), _.T(-1, 1.0, 20), _.S(80)] },
+            { id:23, name:"Sky High", trophies: 15, diff:"Expert", sky: { type: 'gradient', c1: '#0099ff', c2: '#ccffff', density: 0 }, theme: { floor:0xeeffff, fog:0xccffff, obs:0x0088ff, shape:'box', filter:'#00aaff' }, data: [_.V(0.5, 200), _.S(20), _.T(1, 2.5, 40), _.V(-0.5, 200), _.S(50)] },
+            { id:24, name:"Nightmare", trophies: 15, diff:"Expert", sky: { type: 'stars', c1: '#050005', c2: '#110000', density: 50 }, theme: { floor:0x110011, fog:0x050005, obs:0xff0000, shape:'cone', filter:'#550000' }, data: [_.S(40), _.T(1, 3.0, 30), _.T(-1, 3.0, 30), _.V(-0.3, 100), _.T(1, 2.5, 50), _.S(120)] },
+            { id:25, name:"Quantum", trophies: 15, diff:"Master", sky: { type: 'grid', c1: '#ffffff', c2: '#aaaaaa', density: 0 }, theme: { floor:0x222233, fog:0x000011, obs:0xffffff, shape:'box', filter:'#ffffff' }, data: [_.S(60), _.V(0.4, 100), _.T(-1, 3.0, 40), _.V(-0.4, 100), _.T(1, 3.0, 40), _.S(200)] },
+            { id:26, name:"Omega", trophies: 16, diff:"Godlike", sky: { type: 'stars', c1: '#000000', c2: '#110022', density: 1000 }, theme: { floor:0x000000, fog:0x000000, obs:0xff00ff, shape:'cylinder', filter:'#ff00ff' }, data: [_.S(100), _.T(1, 1.0, 200), _.T(-1, 1.0, 200), _.S(150)] },
+            { id:27, name:"Inferno", trophies: 16, diff:"Godlike", sky: { type: 'gradient', c1: '#220000', c2: '#441100', density: 0 }, theme: { floor:0x440000, fog:0x220000, obs:0xffaa00, shape:'cone', filter:'#ff2200' }, data: [_.V(-0.6, 150), _.T(1, 3.5, 30), _.V(0.6, 150), _.T(-1, 3.5, 30), _.S(100)] },
+            { id:28, name:"Zenith", trophies: 16, diff:"Godlike", sky: { type: 'gradient', c1: '#ffffaa', c2: '#ffffff', density: 0 }, theme: { floor:0xffffee, fog:0xffffff, obs:0x444444, shape:'box', filter:'#ffffaa' }, data: [_.S(50), _.T(1, 2.0, 30), _.T(-1, 2.0, 30), _.V(0.2, 300), _.S(50)] },
+            { id:29, name:"Abyss", trophies: 16, diff:"Godlike", sky: { type: 'stars', c1: '#000000', c2: '#000000', density: 5 }, theme: { floor:0x050505, fog:0x020202, obs:0x333333, shape:'box', filter:'#111111' }, data: [_.S(50), _.V(-0.7, 250), _.T(1, 4.0, 40), _.S(200)] },
+            { id:30, name:"Firedodo", trophies: 16, diff:"Godlike", sky: { type: 'stars', c1: '#220000', c2: '#440000', density: 1000 }, theme: { floor:0xff4400, fog:0x220000, obs:0xffff00, shape:'cylinder', filter:'#ff4400' }, data: [_.S(100), _.T(-1, 2.0, 50), _.V(0.5, 100), _.T(1, 2.0, 50), _.V(-0.5, 100), _.T(-1, 3.0, 50), _.S(300)] }
         ];
+
+        function initAssets() {
+            textureLoader = new THREE.TextureLoader();
+            cubeLoader = new THREE.CubeTextureLoader();
+            const f = createTexture(512,512,(c,w,h)=>{c.fillStyle='#222';c.fillRect(0,0,w,h);c.strokeStyle='#444';c.lineWidth=4;for(let i=0;i<=4;i++){let p=i*128;c.moveTo(p,0);c.lineTo(p,h);c.moveTo(0,p);c.lineTo(w,p);}c.stroke();c.strokeStyle='#fff';c.lineWidth=8;c.strokeRect(0,0,w,h);});
+            floorTexture = textureLoader.load(f); floorTexture.wrapS=floorTexture.wrapT=1000;
+            const p = createTexture(128,128,(c,w,h)=>{c.fillStyle='#f60';c.fillRect(0,0,w,h);c.fillStyle='#fff';c.beginPath();c.arc(40,40,15,0,7);c.fill();c.beginPath();c.arc(88,40,15,0,7);c.fill();c.fillStyle='#000';c.beginPath();c.arc(40,40,5,0,7);c.fill();c.beginPath();c.arc(88,40,5,0,7);c.fill();c.lineWidth=6;c.beginPath();c.arc(64,80,30,0,3.14,false);c.stroke();c.lineWidth=10;c.strokeStyle='#820';c.strokeRect(0,0,w,h);});
+            playerTexture = textureLoader.load(p);
+        }
 
         function initGame() {
             initAssets();
             
-            raycaster = new THREE.Raycaster();
-            downVec = new THREE.Vector3(0, -1, 0);
+            // UI Events
+            const l = document.getElementById('left-zone');
+            const r = document.getElementById('right-zone');
+            const h = (k,v)=>{input[k]=v};
+            l.ontouchstart=()=>{h('l',1)}; l.ontouchend=()=>{h('l',0)}; l.onmousedown=()=>{h('l',1)}; l.onmouseup=()=>{h('l',0)};
+            r.ontouchstart=()=>{h('r',1)}; r.ontouchend=()=>{h('r',0)}; r.onmousedown=()=>{h('r',1)}; r.onmouseup=()=>{h('r',0)};
+            window.onkeydown=e=>{if(e.key=='ArrowLeft')h('l',1);if(e.key=='ArrowRight')h('r',1)};
+            window.onkeyup=e=>{if(e.key=='ArrowLeft')h('l',0);if(e.key=='ArrowRight')h('r',0)};
 
-            document.getElementById('level-selector').classList.remove('hidden');
-
-            clock = new THREE.Clock();
             scene = new THREE.Scene();
-            
-            textureLoader = new THREE.TextureLoader();
-            cubeLoader = new THREE.CubeTextureLoader();
-
-            floorTexture = textureLoader.load(Assets.floor);
-            floorTexture.wrapS = THREE.RepeatWrapping;
-            floorTexture.wrapT = THREE.RepeatWrapping;
-            
-            playerTexture = textureLoader.load(Assets.player);
-
-            scene.fog = new THREE.FogExp2(0x000000, 0.001);
-
             camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 2000);
-            renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: "high-performance" });
+            renderer = new THREE.WebGLRenderer({antialias:true, powerPreference:"high-performance"});
             renderer.setSize(window.innerWidth, window.innerHeight);
-            renderer.shadowMap.enabled = true;
-            renderer.outputEncoding = THREE.sRGBEncoding;
-            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-            document.body.appendChild(renderer.domElement);
+            document.getElementById('ui-layer').before(renderer.domElement);
 
             scene.add(new THREE.AmbientLight(0xffffff, 0.5));
             const dl = new THREE.DirectionalLight(0xffffff, 1.0);
-            dl.position.set(50, 100, 50);
-            dl.castShadow = true;
-            dl.shadow.mapSize.set(2048, 2048);
-            scene.add(dl);
+            dl.position.set(50, 100, 50); dl.castShadow = true; scene.add(dl);
 
-            player = new THREE.Object3D();
-            scene.add(player);
+            player = new THREE.Object3D(); scene.add(player);
+            discMesh = new THREE.Mesh(new THREE.BoxGeometry(3,1,3), new THREE.MeshStandardMaterial({map:playerTexture}));
+            discMesh.position.y = 0.5; player.add(discMesh);
 
-            const pGeo = new THREE.BoxGeometry(3, 1, 3);
-            const pMat = new THREE.MeshStandardMaterial({ 
-                map: playerTexture, transparent: true, opacity: 1.0,
-                roughness: 0.1, metalness: 0.8, side: THREE.DoubleSide
-            });
-            discMesh = new THREE.Mesh(pGeo, pMat);
-            discMesh.position.y = 0.5;
-            discMesh.castShadow = true;
-            player.add(discMesh);
-
-            setupInputs();
-            createLevelMenu(); 
-            
-            const fpsSelect = document.getElementById('fps-select');
-            fpsSelect.addEventListener('change', (e) => {
-                maxFPS = parseInt(e.target.value);
-            });
-
+            clock = new THREE.Clock();
             requestAnimationFrame(animate);
-            
-            // PWA Service Worker Registration
-            if ('serviceWorker' in navigator) {
-                navigator.serviceWorker.register('./sw.js')
-                    .then(() => console.log('Service Worker Registered'))
-                    .catch(e => console.log('SW Fail:', e));
-            }
         }
 
-        function createLevelMenu() {
+        function updateMenuUI() {
             const grid = document.getElementById('grid-container');
-            grid.innerHTML = ''; 
+            grid.innerHTML = '';
             LEVELS.forEach((lvl, index) => {
                 const card = document.createElement('div');
                 card.className = 'level-card';
                 card.onclick = () => startLevel(index);
                 
-                const img = document.createElement('div');
+                const img = document.createElement('img');
                 img.className = 'card-image';
-                const hexColor = '#' + lvl.theme.fog.toString(16).padStart(6, '0');
-                img.style.backgroundColor = hexColor;
-                
-                const badge = document.createElement('div');
-                badge.className = `card-badge diff-${lvl.diff}`;
-                badge.innerText = lvl.diff;
+                img.src = `https://logise1.github.io/firedodo/assets/thumbs/level_${lvl.id}.png`;
+                img.onerror = function() { this.style.backgroundColor = '#222'; };
 
-                // --- RECORD ACTUALIZADO ---
-                const best = localStorage.getItem(`firedodo_record_${lvl.id}`) || 0;
-                const rec = document.createElement('div');
-                rec.className = 'card-record';
-                rec.innerText = `Récord: ${best}%`;
+                // Datos de Usuario
+                const isCompleted = userData.completed && userData.completed[lvl.id];
+                const earnedTrophies = isCompleted ? lvl.trophies : 0;
 
-                const title = document.createElement('div');
-                title.className = 'card-title-overlay';
-                title.innerText = lvl.name;
-                
-                const grad = document.createElement('div');
-                grad.className = 'card-gradient';
-                
-                card.appendChild(img); 
-                card.appendChild(grad); 
-                card.appendChild(title); 
-                card.appendChild(badge);
-                card.appendChild(rec);
+                const recDiv = document.createElement('div');
+                recDiv.className = 'card-trophy-status';
+                recDiv.innerHTML = `
+                    🏆<span class="trophy-val">${earnedTrophies}/${lvl.trophies}</span>
+                    ${isCompleted ? '<span class="completed-mark">✓</span>' : ''}
+                `;
+
+                // Live Players Badge
+                const liveCount = activePlayerCount[index] || 0;
+                let liveBadge = '';
+                if(liveCount > 0) {
+                    liveBadge = `<div class="card-live"><div class="live-dot"></div> Jugando: ${liveCount}</div>`;
+                }
+
+                card.innerHTML = `
+                    <div class="card-gradient"></div>
+                    <div class="card-title-overlay">${lvl.name}</div>
+                    <div class="card-badge diff-${lvl.diff}">${lvl.diff}</div>
+                    ${liveBadge}
+                `;
+                card.appendChild(img);
+                card.appendChild(recDiv);
                 grid.appendChild(card);
             });
         }
 
-        function showMenu() {
-            isGameActive = false;
-            stopBGM();
-            document.querySelectorAll('.modal-screen').forEach(e => e.classList.add('hidden'));
-            document.getElementById('game-ui').style.display = 'none'; 
-            document.getElementById('ui-layer').style.background = "rgba(5, 5, 10, 0.98)";
-            document.getElementById('color-overlay').style.backgroundColor = "transparent";
-            document.getElementById('level-selector').classList.remove('hidden');
-            document.getElementById('tutorial-overlay').style.display = 'none';
-            createLevelMenu(); 
-        }
-
-        function spawnParticle() {
-            const geo = new THREE.BoxGeometry(0.4, 0.4, 0.4);
-            const mat = new THREE.MeshBasicMaterial({ color: 0x00ffff, transparent: true, opacity: 0.8 });
-            const p = new THREE.Mesh(geo, mat);
-            p.position.copy(player.position);
-            p.position.x += (Math.random() - 0.5) * 2;
-            p.position.y += (Math.random() * 1); 
-            p.position.z += (Math.random() * 2) + 1; 
-            scene.add(p);
-            particles.push({ mesh: p, life: 1.0 });
-        }
-
-        function updateParticles(dt) {
-            for (let i = particles.length - 1; i >= 0; i--) {
-                const p = particles[i];
-                p.life -= dt * 2.0; 
-                p.mesh.position.z += dt * 20;
-                p.mesh.scale.setScalar(p.life);
-                p.mesh.material.opacity = p.life;
-                p.mesh.rotation.x += dt * 5;
-                if (p.life <= 0) {
-                    scene.remove(p.mesh);
-                    p.mesh.geometry.dispose();
-                    p.mesh.material.dispose();
-                    particles.splice(i, 1);
-                }
-            }
-        }
-
-        function generateLevel(idx) {
-            pathSegments.forEach(m => scene.remove(m));
-            obstacles.forEach(m => scene.remove(m));
-            pathSegments = []; obstacles = [];
-            particles.forEach(p => scene.remove(p.mesh));
-            particles = [];
-
-            const level = LEVELS[idx];
-            const theme = level.theme;
-
-            // Generar Skybox según tipo
-            const skyUrls = generateSkybox(level.sky);
-            const skyTex = cubeLoader.load(skyUrls);
-            scene.background = skyTex;
-
-            let rng = mulberry32(level.id * 12345 + 5678);
-
-            document.getElementById('level-name-hud').innerText = `${level.id}. ${level.name}`;
-
-            scene.fog.color.setHex(theme.fog);
-            document.getElementById('color-overlay').style.backgroundColor = theme.filter;
-            
-            const matFloor = new THREE.MeshStandardMaterial({ map: floorTexture, roughness: 0.4, color: theme.floor });
-            const matFinish = new THREE.MeshStandardMaterial({ color: 0x00ff00, emissive: 0x005500 });
-            const matObs = new THREE.MeshStandardMaterial({ color: theme.obs, emissive: theme.obs, emissiveIntensity: 0.5 });
-
-            let cursor = { pos: new THREE.Vector3(0, 0, 30), yaw: 0, pitch: 0 };
-            let segmentCounter = 0; 
-            totalLevelLength = 0; 
-
-            const addSegment = (len, dYaw=0, dPitch=0, typeData=null, isFinish=false) => {
-                segmentCounter++;
-                totalLevelLength += len;
-
-                const hLen = Math.cos(cursor.pitch) * len; 
-                const vLen = Math.sin(cursor.pitch) * len; 
-                const dx = Math.sin(cursor.yaw) * hLen;
-                const dz = -Math.cos(cursor.yaw) * hLen;
-                const dy = vLen;
-
-                const endPos = new THREE.Vector3(cursor.pos.x + dx, cursor.pos.y + dy, cursor.pos.z + dz);
-                const midPos = new THREE.Vector3().addVectors(cursor.pos, endPos).multiplyScalar(0.5);
-                const finalLen = len + 0.5; 
-                const geo = new THREE.BoxGeometry(CONFIG.pathWidth, 1, finalLen);
-                const mesh = new THREE.Mesh(geo, isFinish ? matFinish : matFloor);
-                
-                mesh.position.copy(midPos);
-                mesh.lookAt(endPos);
-                mesh.receiveShadow = true;
-                mesh.userData = { pitch: cursor.pitch };
-                
-                if(typeData && typeData.t === 'W') {
-                    mesh.userData.isTutorial = true;
-                    mesh.userData.action = typeData.action;
-                    mesh.userData.completed = false;
-                }
-                if(isFinish) mesh.userData.isFinish = true;
-
-                scene.add(mesh);
-                pathSegments.push(mesh);
-
-                let obsChance = 0.0;
-                if (level.diff === "Easy") obsChance = 0.02;
-                else if (level.diff === "Medium") obsChance = 0.05;
-                else if (level.diff === "Hard") { obsChance = 0.10; }
-                else if (level.diff === "Insane") { obsChance = 0.15; }
-                else if (level.diff === "Expert") { obsChance = 0.20; }
-                else if (level.diff === "Master") { obsChance = 0.25; }
-                else if (level.diff === "Godlike") { obsChance = 0.30; }
-
-                if(!isFinish && !mesh.userData.isTutorial && segmentCounter > 25 && rng() < obsChance) {
-                    let obsGeo;
-                    if (theme.shape === 'cone') obsGeo = new THREE.ConeGeometry(2, 4, 16);
-                    else if (theme.shape === 'cylinder') obsGeo = new THREE.CylinderGeometry(1.5, 1.5, 4, 16);
-                    else obsGeo = new THREE.BoxGeometry(3,3,3);
-
-                    const obs = new THREE.Mesh(obsGeo, matObs);
-                    const maxOffset = (CONFIG.pathWidth / 2) - 4;
-                    const offset = (rng()-0.5) * 2 * maxOffset;
-                    
-                    const rightVec = new THREE.Vector3(1,0,0).applyQuaternion(mesh.quaternion);
-                    const upVec = new THREE.Vector3(0,1,0).applyQuaternion(mesh.quaternion);
-                    
-                    obs.position.copy(mesh.position);
-                    obs.position.add(upVec.multiplyScalar(2)); 
-                    obs.position.add(rightVec.multiplyScalar(offset));
-                    obs.rotation.copy(mesh.rotation);
-                    obs.castShadow = true;
-                    obs.userData = { moving: false };
-                    scene.add(obs);
-                    obstacles.push(obs);
-                }
-
-                cursor.pos.copy(endPos);
-                cursor.yaw += dYaw;
-                cursor.pitch += dPitch;
-            };
-
-            addSegment(60, 0, 0);
-            level.data.forEach(item => {
-                const BASE_SEGMENT_LEN = 5; 
-                if(item.t === 'S') { 
-                    const blocks = Math.ceil(item.len / BASE_SEGMENT_LEN);
-                    for(let i=0; i<blocks; i++) addSegment(BASE_SEGMENT_LEN, 0, 0);
-                }
-                else if(item.t === 'W') { addSegment(item.len, 0, 0, item); }
-                else if(item.t === 'T') { 
-                    const count = Math.ceil((item.len * 5) / BASE_SEGMENT_LEN); 
-                    const angleStep = (item.dir * item.f) / count;
-                    for(let i=0; i<count; i++) addSegment(BASE_SEGMENT_LEN, angleStep, 0);
-                }
-                else if(item.t === 'V') { 
-                    const count = Math.ceil((item.len * 5) / BASE_SEGMENT_LEN);
-                    const targetPitch = item.s; 
-                    cursor.pitch = targetPitch; 
-                    for(let i=0; i<count; i++) addSegment(BASE_SEGMENT_LEN, 0, 0);
-                    cursor.pitch = 0; 
-                }
-            });
-            addSegment(30, 0, 0, null, true);
-        }
-
         function startLevel(idx) {
             currentLevel = idx;
-            try { document.documentElement.requestFullscreen().catch(()=>{}); } catch(e){}
-            document.getElementById('ui-layer').style.background = "transparent";
             document.getElementById('level-selector').classList.add('hidden');
             document.getElementById('game-over').classList.add('hidden');
             document.getElementById('level-complete').classList.add('hidden');
             document.getElementById('game-ui').style.display = 'block';
-            
-            player.position.set(0, 0, 0);
-            player.rotation.set(0, 0, 0);
-            discMesh.rotation.set(0,0,0);
-            playerVelY = 0;
-            timeScale = 1.0;
             document.getElementById('tutorial-overlay').style.display = 'none';
 
+            // Notificar Firebase que entré al nivel
+            update(ref(db, 'users/' + currentUser.uid), { currentLevel: idx });
+
             generateLevel(idx);
+            player.position.set(0,0,0); player.rotation.set(0,0,0);
             isGameActive = true;
             clock.start();
-            playBGM();
+            
+            // Cargar otros jugadores ya presentes
+            Object.keys(otherPlayers).forEach(k => removeGhost(k));
         }
 
-        function restartLevel() { 
-            stopBGM();
-            startLevel(currentLevel); 
+        function showMenu() {
+            isGameActive = false;
+            update(ref(db, 'users/' + currentUser.uid), { currentLevel: -1 }); // Salir del nivel en DB
+            document.getElementById('game-ui').style.display = 'none';
+            document.getElementById('level-selector').classList.remove('hidden');
+            document.getElementById('game-over').classList.add('hidden');
+            document.getElementById('level-complete').classList.add('hidden');
+            updateMenuUI();
         }
+
+        function restartLevel() { startLevel(currentLevel); }
         
         function nextLevel() { 
-            stopBGM();
-            saveRecord(100);
             if(currentLevel < LEVELS.length - 1) startLevel(currentLevel + 1);
             else showMenu();
         }
 
-        function saveRecord(percent) {
-            const key = `firedodo_record_${LEVELS[currentLevel].id}`;
-            const currentBest = parseInt(localStorage.getItem(key) || "0");
-            if (percent > currentBest) {
-                localStorage.setItem(key, percent.toString());
-            }
+        function generateLevel(idx) {
+            // Limpieza
+            pathSegments.forEach(m => scene.remove(m)); pathSegments = [];
+            obstacles.forEach(m => scene.remove(m)); obstacles = [];
+            
+            const level = LEVELS[idx];
+            document.getElementById('level-name-hud').innerText = level.name;
+            
+            scene.background = cubeLoader.load(generateSkybox(level.sky));
+            scene.fog.color.setHex(level.theme.fog);
+            document.getElementById('color-overlay').style.backgroundColor = level.theme.filter;
+
+            const matFloor = new THREE.MeshStandardMaterial({ map: floorTexture, color: level.theme.floor });
+            const matObs = new THREE.MeshStandardMaterial({ color: level.theme.obs });
+
+            let cursor = { pos: new THREE.Vector3(0,0,30), yaw:0, pitch:0 };
+            totalLevelLength = 0;
+            let segCount = 0;
+
+            // Función RNG determinista
+            let rng = function() { let t = level.id * 1548 + 234 + segCount * 99; return ((t*t)%1000)/1000; };
+
+            const addSeg = (len, dy, dp, isF=false) => {
+                segCount++; totalLevelLength += len;
+                const h = Math.cos(cursor.pitch)*len, v = Math.sin(cursor.pitch)*len;
+                const end = new THREE.Vector3(
+                    cursor.pos.x + Math.sin(cursor.yaw)*h,
+                    cursor.pos.y + v,
+                    cursor.pos.z - Math.cos(cursor.yaw)*h
+                );
+                const mid = new THREE.Vector3().addVectors(cursor.pos, end).multiplyScalar(0.5);
+                
+                const m = new THREE.Mesh(new THREE.BoxGeometry(30, 1, len+1), isF ? new THREE.MeshBasicMaterial({color:0x00ff00}) : matFloor);
+                m.position.copy(mid); m.lookAt(end); 
+                m.userData = { pitch: cursor.pitch, isFinish: isF };
+                scene.add(m); pathSegments.push(m);
+
+                // Obstáculos
+                if(!isF && segCount > 25 && rng() < 0.1) {
+                    const o = new THREE.Mesh(new THREE.BoxGeometry(3,3,3), matObs);
+                    o.position.copy(m.position);
+                    o.position.y += 2;
+                    o.position.x += (rng() > 0.5 ? 10 : -10); // Simple offset
+                    scene.add(o); obstacles.push(o);
+                }
+
+                cursor.pos.copy(end); cursor.yaw+=dy; cursor.pitch+=dp;
+            };
+
+            // Construcción simple basada en datos
+            addSeg(50, 0, 0);
+            level.data.forEach(d => {
+                if(d.t==='S') for(let i=0;i<d.len/5;i++) addSeg(5,0,0);
+                if(d.t==='T') { let step=(d.dir*d.f)/(d.len/5); for(let i=0;i<d.len/5;i++) addSeg(5,step,0); }
+                if(d.t==='V') { cursor.pitch=d.s; for(let i=0;i<d.len/5;i++) addSeg(5,0,0); cursor.pitch=0; }
+            });
+            addSeg(30,0,0,true);
         }
 
-        function setupInputs() {
-            const l = document.getElementById('left-zone');
-            const r = document.getElementById('right-zone');
-            const handle = (k, v) => { input[k] = v; };
-            l.addEventListener('touchstart', (e)=>{e.preventDefault(); handle('l',true);});
-            l.addEventListener('touchend', (e)=>{e.preventDefault(); handle('l',false);});
-            r.addEventListener('touchstart', (e)=>{e.preventDefault(); handle('r',true);});
-            r.addEventListener('touchend', (e)=>{e.preventDefault(); handle('r',false);});
-            l.addEventListener('mousedown', ()=>handle('l',true));
-            l.addEventListener('mouseup', ()=>handle('l',false));
-            r.addEventListener('mousedown', ()=>handle('r',true));
-            r.addEventListener('mouseup', ()=>handle('r',false));
-            window.addEventListener('keydown', (e) => {
-                const k = e.key.toLowerCase();
-                if(k === 'arrowleft' || k === 'a') handle('l', true);
-                if(k === 'arrowright' || k === 'd') handle('r', true);
-            });
-            window.addEventListener('keyup', (e) => {
-                const k = e.key.toLowerCase();
-                if(k === 'arrowleft' || k === 'a') handle('l', false);
-                if(k === 'arrowright' || k === 'd') handle('r', false);
-            });
-        }
-
-        function animate(timestamp) {
+        // --- GAMELOOP ---
+        function animate() {
             requestAnimationFrame(animate);
-            if(!clock) return;
+            const dt = Math.min(clock.getDelta(), 0.1);
 
-            if (maxFPS !== 0) {
-                const frameInterval = 1000 / maxFPS;
-                const elapsed = timestamp - lastFrameTime;
-                if (elapsed < frameInterval) return;
-                lastFrameTime = timestamp - (elapsed % frameInterval);
-            }
-
-            const realDt = Math.min(clock.getDelta(), 0.1);
-            const dt = realDt * timeScale;
-            const time = clock.getElapsedTime();
-
-            if(isGameActive) {
-                // CALCULAR PROGRESO
-                const distanceTraveled = Math.abs(player.position.z); 
-                let percent = Math.floor((distanceTraveled / totalLevelLength) * 100);
-                if(percent > 100) percent = 100;
-                document.getElementById('progress-text').innerText = `${percent}%`;
-
-                const turn = CONFIG.turnSpeed * dt;
+            if(isGameActive && player) {
+                // Movimiento
+                const turn = 2.2 * dt;
                 if(input.l) player.rotation.y += turn;
                 if(input.r) player.rotation.y -= turn;
-
-                player.translateZ(-CONFIG.speed * dt);
-                playerVelY -= CONFIG.gravity * dt;
-                player.position.y += playerVelY * dt;
-
-                const rayPos = player.position.clone();
-                rayPos.y += 20; 
-                raycaster.set(rayPos, downVec);
-                const hits = raycaster.intersectObjects(pathSegments);
-
-                let currentSlope = 0; 
-                let onTutorialSegment = null;
-
-                if(hits.length > 0) {
-                    const hit = hits[0];
-                    currentSlope = hit.object.userData.pitch || 0; 
-                    
-                    if(hit.object.userData.isTutorial && !hit.object.userData.completed) {
-                        onTutorialSegment = hit.object;
-                    }
-
-                    const distToFloor = hit.distance - 20; 
-                    if(distToFloor < 5 && distToFloor > -8) { 
-                        player.position.y = hit.point.y;
-                        playerVelY = 0;
-                        if(hit.object.userData.isFinish) {
-                            isGameActive = false;
-                            stopBGM();
-                            playSound('win');
-                            saveRecord(100);
-                            document.getElementById('level-complete').classList.remove('hidden');
-                        }
-                    }
-                }
-
-                // TUTORIAL
-                if(onTutorialSegment) {
-                    const action = onTutorialSegment.userData.action;
-                    timeScale = THREE.MathUtils.lerp(timeScale, 0.07, 0.1); 
-                    const overlay = document.getElementById('tutorial-overlay');
-                    overlay.style.display = 'block';
-                    if(action === 'left') {
-                        document.getElementById('tut-icon').innerText = '←';
-                        document.getElementById('tut-msg').innerText = 'PULSA IZQUIERDA';
-                        if(input.l) onTutorialSegment.userData.completed = true;
-                    } else {
-                        document.getElementById('tut-icon').innerText = '→';
-                        document.getElementById('tut-msg').innerText = 'PULSA DERECHA';
-                        if(input.r) onTutorialSegment.userData.completed = true;
+                player.translateZ(-90 * dt);
+                
+                // Raycast Suelo
+                const ray = new THREE.Raycaster(player.position.clone().add(new THREE.Vector3(0,20,0)), new THREE.Vector3(0,-1,0));
+                const hits = ray.intersectObjects(pathSegments);
+                let onGround = false;
+                if(hits.length > 0 && hits[0].distance < 30) {
+                    player.position.y = hits[0].point.y;
+                    onGround = true;
+                    if(hits[0].object.userData.isFinish) {
+                        isGameActive = false;
+                        levelCompleted();
                     }
                 } else {
-                    timeScale = THREE.MathUtils.lerp(timeScale, 1.0, 0.1);
-                    if(timeScale > 0.9) {
-                        document.getElementById('tutorial-overlay').style.display = 'none';
-                        timeScale = 1.0;
-                    }
+                    player.position.y -= 100 * dt; // Gravedad caída
                 }
 
-                // CÁMARA
-                let targetH = CONFIG.cameraHeight;
-                let targetD = CONFIG.cameraDist;
-                if (currentSlope < -0.2) { targetH = CONFIG.cameraHeight + 40; targetD = 12; }
-                currentCamHeight += (targetH - currentCamHeight) * 2.5 * dt;
-                currentCamDist += (targetD - currentCamDist) * 2.5 * dt;
+                // Progreso UI
+                const pct = Math.min(100, Math.floor((Math.abs(player.position.z)/totalLevelLength)*100));
+                document.getElementById('progress-text').innerText = pct + '%';
 
-                // MUERTE POR VACÍO
-                if(player.position.y < -500) {
+                // Muerte
+                if(player.position.y < -100) {
                     isGameActive = false;
-                    stopBGM();
-                    playSound('death');
-                    saveRecord(percent);
-                    document.getElementById('fail-reason').innerText = "Caída al vacío";
                     document.getElementById('game-over').classList.remove('hidden');
                 }
 
-                discMesh.rotation.y += 10.0 * dt; 
-                spawnParticle();
-                
-                // MUERTE POR OBSTÁCULO (RÁPIDA)
-                for(let o of obstacles) {
-                    if(player.position.distanceToSquared(o.position) < 15) {
-                        saveRecord(percent);
-                        isGameActive = false;
-                        stopBGM();
-                        playSound('death');
-                        setTimeout(() => { restartLevel(); }, 500);
-                        return;
-                    }
+                // Sincronización RED (Throttled)
+                const now = Date.now();
+                if(now - lastNetworkUpdate > 100) {
+                    update(ref(db, 'users/' + currentUser.uid), {
+                        pos: {x:Math.round(player.position.x), y:Math.round(player.position.y), z:Math.round(player.position.z)},
+                        rot: parseFloat(player.rotation.y.toFixed(2))
+                    });
+                    lastNetworkUpdate = now;
                 }
             }
-            
-            updateParticles(dt);
 
+            // Cámara
             if(player) {
-                const camOff = new THREE.Vector3(0, currentCamHeight, currentCamDist);
-                camOff.applyAxisAngle(new THREE.Vector3(0,1,0), player.rotation.y);
-                const target = player.position.clone().add(camOff);
-                
-                const lerp = 1 - Math.exp(-10 * dt); 
-                camera.position.lerp(target, lerp);
-                
-                const isTopDown = (currentCamHeight > CONFIG.cameraHeight + 10);
-                const lookDownOffset = isTopDown ? -20 : 0; 
-                const lookForwardDist = isTopDown ? -10 : -30; 
-
-                const lookTarget = player.position.clone().add(
-                    new THREE.Vector3(0, lookDownOffset, lookForwardDist).applyAxisAngle(new THREE.Vector3(0,1,0), player.rotation.y)
-                );
-                camera.lookAt(lookTarget);
+                const target = player.position.clone().add(new THREE.Vector3(0, 18, 24).applyAxisAngle(new THREE.Vector3(0,1,0), player.rotation.y));
+                camera.position.lerp(target, 0.1);
+                camera.lookAt(player.position);
             }
+
+            // Fantasmas
+            Object.values(otherPlayers).forEach(g => {
+                g.mesh.position.lerp(g.targetPos, 0.1);
+                g.mesh.rotation.y += (g.targetRot - g.mesh.rotation.y) * 0.1;
+            });
 
             renderer.render(scene, camera);
         }
 
-        window.addEventListener('resize', () => {
-            if(camera && renderer) {
-                camera.aspect = window.innerWidth/window.innerHeight;
-                camera.updateProjectionMatrix();
-                renderer.setSize(window.innerWidth, window.innerHeight);
-            }
-        });
+        function levelCompleted() {
+            const lvl = LEVELS[currentLevel];
+            const rewardCoins = 50;
+            
+            // Verificar si es la primera vez que se completa
+            const alreadyCompleted = userData.completed && userData.completed[lvl.id];
+            let gainedTrophies = 0;
 
-        window.onload = initGame;
+            const updates = {};
+            
+            // Sumar Monedas
+            updates['coins'] = (userData.coins || 0) + rewardCoins;
+
+            // Sumar Trofeos si es nuevo
+            if (!alreadyCompleted) {
+                gainedTrophies = lvl.trophies;
+                updates['trophies'] = (userData.trophies || 0) + gainedTrophies;
+                updates[`completed/${lvl.id}`] = true;
+            }
+
+            update(ref(db, 'users/' + currentUser.uid), updates);
+
+            // Mostrar UI
+            document.getElementById('win-rewards').innerText = `+${rewardCoins} Monedas` + (gainedTrophies > 0 ? ` | +${gainedTrophies} 🏆` : '');
+            document.getElementById('level-complete').classList.remove('hidden');
+        }
+
+        // Inicio
+        initGame();
 
     </script>
 </body>
