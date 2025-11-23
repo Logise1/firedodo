@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Firedodo Online PWA</title>
+    <title>Firedodo Enhanced</title>
     
     <!-- PWA META TAGS -->
     <link rel="manifest" href="manifest.json">
@@ -334,23 +334,53 @@
             return cvs.toDataURL();
         }
 
-        // Skybox Generator
-        function generateSkybox(c1, c2, starCount) {
+        // Skybox Generator Mejorado con Tipos
+        function generateSkybox(config) {
+            const { type, c1, c2, density } = config;
             const textures = [];
+            
             const drawSky = (ctx, w, h) => {
-                const grad = ctx.createLinearGradient(0,0,0,h);
+                // Fondo degradado
+                const grad = ctx.createLinearGradient(0, 0, 0, h);
                 grad.addColorStop(0, c1);
                 grad.addColorStop(1, c2);
-                ctx.fillStyle = grad; ctx.fillRect(0,0,w,h);
-                ctx.fillStyle = '#fff';
-                for(let i=0; i<starCount; i++) {
-                    ctx.globalAlpha = Math.random() * 0.8 + 0.2;
-                    const x = Math.random()*w;
-                    const y = Math.random()*h;
-                    const s = Math.random()*2;
-                    ctx.fillRect(x,y,s,s);
+                ctx.fillStyle = grad; 
+                ctx.fillRect(0, 0, w, h);
+
+                // Elementos según tipo
+                if (type === 'stars') {
+                    ctx.fillStyle = '#fff';
+                    for(let i=0; i<density; i++) {
+                        ctx.globalAlpha = Math.random() * 0.8 + 0.2;
+                        const x = Math.random()*w;
+                        const y = Math.random()*h;
+                        const s = Math.random()*2;
+                        ctx.fillRect(x,y,s,s);
+                    }
+                } else if (type === 'grid') {
+                    ctx.strokeStyle = 'rgba(255,255,255,0.1)';
+                    ctx.lineWidth = 2;
+                    // Lineas verticales
+                    for(let i=0; i<w; i+=40) {
+                        ctx.beginPath(); ctx.moveTo(i,0); ctx.lineTo(i,h); ctx.stroke();
+                    }
+                    // Horizontales
+                    for(let i=0; i<h; i+=40) {
+                        ctx.beginPath(); ctx.moveTo(0,i); ctx.lineTo(w,i); ctx.stroke();
+                    }
+                } else if (type === 'digital') {
+                    ctx.fillStyle = '#00ff00';
+                    for(let i=0; i<density; i++) {
+                        ctx.globalAlpha = Math.random() * 0.3;
+                        const x = Math.floor(Math.random() * w / 20) * 20;
+                        const y = Math.random() * h;
+                        const len = Math.random() * 100;
+                        ctx.fillRect(x, y, 2, len);
+                    }
                 }
+                // 'gradient' solo usa el fondo, no añade nada extra
             };
+
             const dataUrl = createTexture(512, 512, drawSky);
             for(let i=0; i<6; i++) textures.push(dataUrl);
             return textures;
@@ -429,44 +459,44 @@
             }
         }
 
-        // --- NIVELES ---
+        // --- NIVELES CONFIGURADOS ---
         const LEVELS = [
             { 
                 id:0, name:"Tutorial", diff:"Tutorial", 
-                sky: { c1: '#000022', c2: '#001133', stars: 50 },
+                sky: { type: 'stars', c1: '#000022', c2: '#001133', density: 50 },
                 theme: { floor:0x444444, fog:0x101020, obs:0xffffff, shape:'box', filter:'#0055ff' }, 
                 data: [_.S(50), _.W('right', 30), _.T(1, 0.8, 40), _.S(40), _.W('left', 30), _.T(-1, 0.8, 40), _.S(60), _.V(0.3, 60), _.V(-0.3, 80), _.S(100)] 
             },
-            { id:1, name:"Space Walk", diff:"Easy", sky: { c1: '#000000', c2: '#000020', stars: 200 }, theme: { floor:0xaaaaaa, fog:0x000010, obs:0x00ffff, shape:'box', filter:'#00ffff' }, data: [_.S(80), _.T(-1, 0.3, 60), _.S(60), _.T(1, 0.3, 60), _.S(100)] },
-            { id:2, name:"Candy Land", diff:"Easy", sky: { c1: '#ffdddd', c2: '#ffbbbb', stars: 20 }, theme: { floor:0xffdddd, fog:0x330011, obs:0xff00aa, shape:'cylinder', filter:'#ff00aa' }, data: [_.S(60), _.T(1, 0.5, 80), _.S(40), _.T(-1, 0.5, 80), _.S(120)] },
-            { id:3, name:"Toxic Waste", diff:"Easy", sky: { c1: '#001100', c2: '#003300', stars: 50 }, theme: { floor:0xddffdd, fog:0x002200, obs:0x00ff00, shape:'box', filter:'#00ff00' }, data: [_.S(40), _.V(0.2, 100), _.S(40), _.T(-1, 0.5, 60), _.V(0.2, 100), _.S(80)] },
-            { id:4, name:"Solar", diff:"Medium", sky: { c1: '#331100', c2: '#662200', stars: 100 }, theme: { floor:0xffffcc, fog:0x221100, obs:0xffaa00, shape:'cone', filter:'#ffaa00' }, data: [_.S(40), _.T(1, 0.8, 40), _.T(-1, 0.8, 40), _.T(1, 0.8, 40), _.T(-1, 0.8, 40), _.S(80)] },
-            { id:5, name:"Hyper Speed", diff:"Medium", sky: { c1: '#000044', c2: '#000088', stars: 300 }, theme: { floor:0xccccff, fog:0x000033, obs:0x4444ff, shape:'cylinder', filter:'#4444ff' }, data: [_.S(150), _.T(-1, 0.2, 100), _.S(200)] },
-            { id:6, name:"Deep Sea", diff:"Medium", sky: { c1: '#001122', c2: '#002244', stars: 40 }, theme: { floor:0xaaffff, fog:0x001122, obs:0x00aaaa, shape:'box', filter:'#00aaaa' }, data: [_.S(40), _.V(0.1, 80), _.S(40), _.V(-0.1, 80), _.S(80)] },
-            { id:7, name:"Red Alert", diff:"Hard", sky: { c1: '#330000', c2: '#550000', stars: 0 }, theme: { floor:0xffaaaa, fog:0x330000, obs:0xff0000, shape:'cone', filter:'#ff0000' }, data: [_.S(40), _.V(-0.3, 150), _.S(80), _.T(1, 0.4, 80), _.S(100)] },
-            { id:8, name:"Jungle", diff:"Hard", sky: { c1: '#002200', c2: '#004411', stars: 20 }, theme: { floor:0xaaffaa, fog:0x002211, obs:0x008844, shape:'cylinder', filter:'#00ff44' }, data: [_.S(60), _.T(1, 1.0, 30), _.T(-1, 1.0, 30), _.T(1, 1.0, 30), _.T(-1, 1.0, 30), _.S(100)] },
-            { id:9, name:"Whiteout", diff:"Hard", sky: { c1: '#cccccc', c2: '#eeeeee', stars: 0 }, theme: { floor:0xffffff, fog:0x888888, obs:0x222222, shape:'box', filter:'#ffffff' }, data: [_.S(40), _.T(1, 1.0, 80), _.S(20), _.T(-1, 1.0, 80), _.S(60)] },
-            { id:10, name:"Void", diff:"Insane", sky: { c1: '#000000', c2: '#110011', stars: 500 }, theme: { floor:0x666666, fog:0x000000, obs:0xaa00ff, shape:'cone', filter:'#aa00ff' }, data: [_.V(0.3, 60), _.V(-0.3, 60), _.T(1, 0.8, 60), _.V(0.3, 60), _.V(-0.3, 60), _.S(80)] },
-            { id:11, name:"Rusty", diff:"Insane", sky: { c1: '#331100', c2: '#442211', stars: 50 }, theme: { floor:0xddbb99, fog:0x221105, obs:0x884400, shape:'cylinder', filter:'#ff8800' }, data: [_.S(40), _.T(1, 0.5, 300), _.S(80)] },
-            { id:12, name:"Neon Nights", diff:"Insane", sky: { c1: '#110022', c2: '#220044', stars: 200 }, theme: { floor:0x333333, fog:0x110022, obs:0xff00ff, shape:'box', filter:'#ff00ff' }, data: [_.S(40), _.T(-1, 1.2, 80), _.S(40), _.T(1, 1.2, 80), _.S(80)] },
-            { id:13, name:"Glacier", diff:"Expert", sky: { c1: '#ddeeff', c2: '#ffffff', stars: 50 }, theme: { floor:0xddeeff, fog:0x223344, obs:0x0088ff, shape:'cone', filter:'#0088ff' }, data: [_.S(40), _.T(1, 1.5, 40), _.V(-0.2, 120), _.T(-1, 1.5, 40), _.S(80)] },
-            { id:14, name:"Matrix", diff:"Expert", sky: { c1: '#000000', c2: '#001100', stars: 1000 }, theme: { floor:0x000000, fog:0x002200, obs:0x00ff00, shape:'box', filter:'#00ff00' }, data: [_.S(40), _.T(-1, 1.8, 40), _.T(1, 1.8, 40), _.V(0.4, 60), _.T(-1, 1.5, 80), _.S(120)] },
-            { id:15, name:"The End", diff:"Expert", sky: { c1: '#111111', c2: '#333333', stars: 100 }, theme: { floor:0x222222, fog:0x111111, obs:0xffffff, shape:'cylinder', filter:'#aaaaaa' }, data: [_.S(40), _.V(-0.4, 100), _.T(1, 1.5, 60), _.V(0.4, 100), _.T(-1, 1.5, 60), _.S(150)] },
-            { id:16, name:"Nebula", diff:"Hard", sky: { c1: '#220022', c2: '#440044', stars: 300 }, theme: { floor:0x220022, fog:0x110033, obs:0x00ffff, shape:'box', filter:'#ff00ff' }, data: [_.S(60), _.T(1, 2.0, 40), _.V(0.5, 80), _.T(-1, 2.0, 40), _.S(80)] },
-            { id:17, name:"Asteroid", diff:"Hard", sky: { c1: '#111111', c2: '#222222', stars: 500 }, theme: { floor:0x443322, fog:0x111111, obs:0x888888, shape:'cone', filter:'#aa5500' }, data: [_.V(-0.5, 100), _.T(1, 1.0, 20), _.T(-1, 1.0, 20), _.T(1, 1.0, 20), _.S(100)] },
-            { id:18, name:"Cyberpunk", diff:"Hard", sky: { c1: '#000022', c2: '#222200', stars: 200 }, theme: { floor:0x001122, fog:0x000022, obs:0xffff00, shape:'box', filter:'#ffff00' }, data: [_.S(40), _.T(1, 2.5, 40), _.V(-0.2, 50), _.T(-1, 2.5, 40), _.S(60)] },
-            { id:19, name:"Black Hole", diff:"Hard", sky: { c1: '#000000', c2: '#050505', stars: 20 }, theme: { floor:0x111111, fog:0x050505, obs:0x5500aa, shape:'cylinder', filter:'#5500aa' }, data: [_.S(40), _.T(-1, 3.0, 20), _.T(1, 3.0, 20), _.V(0.6, 80), _.S(80)] },
-            { id:20, name:"Horizon", diff:"Hard", sky: { c1: '#ffeecc', c2: '#ffaa00', stars: 0 }, theme: { floor:0xffffff, fog:0xffeecc, obs:0xffaa00, shape:'box', filter:'#ffaa00' }, data: [_.S(200), _.V(0.1, 200), _.S(200)] },
-            { id:21, name:"Magma Core", diff:"Insane", sky: { c1: '#330000', c2: '#ff0000', stars: 50 }, theme: { floor:0x330000, fog:0x1a0000, obs:0xff4400, shape:'cone', filter:'#ff4400' }, data: [_.S(50), _.V(-0.4, 80), _.S(20), _.V(-0.4, 80), _.T(1, 1.5, 50), _.T(-1, 1.5, 50), _.S(100)] },
-            { id:22, name:"Serpent", diff:"Insane", sky: { c1: '#002200', c2: '#004400', stars: 100 }, theme: { floor:0x003300, fog:0x001100, obs:0x00ff44, shape:'cylinder', filter:'#00ff44' }, data: [_.S(40), _.T(1, 1.0, 20), _.T(-1, 1.0, 20), _.T(1, 1.0, 20), _.T(-1, 1.0, 20), _.T(1, 1.0, 20), _.T(-1, 1.0, 20), _.S(80)] },
-            { id:23, name:"Sky High", diff:"Expert", sky: { c1: '#ccffff', c2: '#ffffff', stars: 10 }, theme: { floor:0xeeffff, fog:0xccffff, obs:0x0088ff, shape:'box', filter:'#00aaff' }, data: [_.V(0.5, 200), _.S(20), _.T(1, 2.5, 40), _.V(-0.5, 200), _.S(50)] },
-            { id:24, name:"Nightmare", diff:"Expert", sky: { c1: '#050005', c2: '#110000', stars: 50 }, theme: { floor:0x110011, fog:0x050005, obs:0xff0000, shape:'cone', filter:'#550000' }, data: [_.S(40), _.T(1, 3.0, 30), _.T(-1, 3.0, 30), _.V(-0.3, 100), _.T(1, 2.5, 50), _.S(120)] },
-            { id:25, name:"Quantum", diff:"Master", sky: { c1: '#000011', c2: '#111122', stars: 500 }, theme: { floor:0x222233, fog:0x000011, obs:0xffffff, shape:'box', filter:'#ffffff' }, data: [_.S(60), _.V(0.4, 100), _.T(-1, 3.0, 40), _.V(-0.4, 100), _.T(1, 3.0, 40), _.S(200)] },
-            { id:26, name:"Omega", diff:"Godlike", sky: { c1: '#000000', c2: '#110022', stars: 1000 }, theme: { floor:0x000000, fog:0x000000, obs:0xff00ff, shape:'cylinder', filter:'#ff00ff' }, data: [_.S(100), _.T(1, 1.0, 200), _.T(-1, 1.0, 200), _.S(150)] },
-            { id:27, name:"Inferno", diff:"Godlike", sky: { c1: '#220000', c2: '#441100', stars: 100 }, theme: { floor:0x440000, fog:0x220000, obs:0xffaa00, shape:'cone', filter:'#ff2200' }, data: [_.V(-0.6, 150), _.T(1, 3.5, 30), _.V(0.6, 150), _.T(-1, 3.5, 30), _.S(100)] },
-            { id:28, name:"Zenith", diff:"Godlike", sky: { c1: '#ffffaa', c2: '#ffffff', stars: 200 }, theme: { floor:0xffffee, fog:0xffffff, obs:0x444444, shape:'box', filter:'#ffffaa' }, data: [_.S(50), _.T(1, 2.0, 30), _.T(-1, 2.0, 30), _.V(0.2, 300), _.S(50)] },
-            { id:29, name:"Abyss", diff:"Godlike", sky: { c1: '#000000', c2: '#000000', stars: 5 }, theme: { floor:0x050505, fog:0x020202, obs:0x333333, shape:'box', filter:'#111111' }, data: [_.S(50), _.V(-0.7, 250), _.T(1, 4.0, 40), _.S(200)] },
-            { id:30, name:"Firedodo", diff:"Godlike", sky: { c1: '#220000', c2: '#440000', stars: 1000 }, theme: { floor:0xff4400, fog:0x220000, obs:0xffff00, shape:'cylinder', filter:'#ff4400' }, data: [_.S(100), _.T(-1, 2.0, 50), _.V(0.5, 100), _.T(1, 2.0, 50), _.V(-0.5, 100), _.T(-1, 3.0, 50), _.S(300)] }
+            { id:1, name:"Space Walk", diff:"Easy", sky: { type: 'stars', c1: '#000000', c2: '#000020', density: 200 }, theme: { floor:0xaaaaaa, fog:0x000010, obs:0x00ffff, shape:'box', filter:'#00ffff' }, data: [_.S(80), _.T(-1, 0.3, 60), _.S(60), _.T(1, 0.3, 60), _.S(100)] },
+            { id:2, name:"Candy Land", diff:"Easy", sky: { type: 'gradient', c1: '#ffccdd', c2: '#99ccff', density: 0 }, theme: { floor:0xffdddd, fog:0x664455, obs:0xff00aa, shape:'cylinder', filter:'#ff00aa' }, data: [_.S(60), _.T(1, 0.5, 80), _.S(40), _.T(-1, 0.5, 80), _.S(120)] },
+            { id:3, name:"Toxic Waste", diff:"Easy", sky: { type: 'grid', c1: '#002200', c2: '#004400', density: 50 }, theme: { floor:0xddffdd, fog:0x002200, obs:0x00ff00, shape:'box', filter:'#00ff00' }, data: [_.S(40), _.V(0.2, 100), _.S(40), _.T(-1, 0.5, 60), _.V(0.2, 100), _.S(80)] },
+            { id:4, name:"Solar", diff:"Medium", sky: { type: 'gradient', c1: '#442200', c2: '#ff8800', density: 0 }, theme: { floor:0xffffcc, fog:0x442200, obs:0xffaa00, shape:'cone', filter:'#ffaa00' }, data: [_.S(40), _.T(1, 0.8, 40), _.T(-1, 0.8, 40), _.T(1, 0.8, 40), _.T(-1, 0.8, 40), _.S(80)] },
+            { id:5, name:"Hyper Speed", diff:"Medium", sky: { type: 'stars', c1: '#000044', c2: '#000088', density: 300 }, theme: { floor:0xccccff, fog:0x000033, obs:0x4444ff, shape:'cylinder', filter:'#4444ff' }, data: [_.S(150), _.T(-1, 0.2, 100), _.S(200)] },
+            { id:6, name:"Deep Sea", diff:"Medium", sky: { type: 'gradient', c1: '#000022', c2: '#001144', density: 0 }, theme: { floor:0xaaffff, fog:0x001122, obs:0x00aaaa, shape:'box', filter:'#00aaaa' }, data: [_.S(40), _.V(0.1, 80), _.S(40), _.V(-0.1, 80), _.S(80)] },
+            { id:7, name:"Red Alert", diff:"Hard", sky: { type: 'grid', c1: '#330000', c2: '#660000', density: 0 }, theme: { floor:0xffaaaa, fog:0x330000, obs:0xff0000, shape:'cone', filter:'#ff0000' }, data: [_.S(40), _.V(-0.3, 150), _.S(80), _.T(1, 0.4, 80), _.S(100)] },
+            { id:8, name:"Jungle", diff:"Hard", sky: { type: 'gradient', c1: '#00BFFF', c2: '#87CEFA', density: 0 }, theme: { floor:0xaaffaa, fog:0x004411, obs:0x008844, shape:'cylinder', filter:'#00ff44' }, data: [_.S(60), _.T(1, 1.0, 30), _.T(-1, 1.0, 30), _.T(1, 1.0, 30), _.T(-1, 1.0, 30), _.S(100)] },
+            { id:9, name:"Whiteout", diff:"Hard", sky: { type: 'gradient', c1: '#2F4F4F', c2: '#506070', density: 0 }, theme: { floor:0xffffff, fog:0x506070, obs:0x222222, shape:'box', filter:'#ffffff' }, data: [_.S(40), _.T(1, 1.0, 80), _.S(20), _.T(-1, 1.0, 80), _.S(60)] },
+            { id:10, name:"Void", diff:"Insane", sky: { type: 'stars', c1: '#000000', c2: '#110011', density: 500 }, theme: { floor:0x666666, fog:0x000000, obs:0xaa00ff, shape:'cone', filter:'#aa00ff' }, data: [_.V(0.3, 60), _.V(-0.3, 60), _.T(1, 0.8, 60), _.V(0.3, 60), _.V(-0.3, 60), _.S(80)] },
+            { id:11, name:"Rusty", diff:"Insane", sky: { type: 'gradient', c1: '#3e2723', c2: '#5d4037', density: 0 }, theme: { floor:0xddbb99, fog:0x3e2723, obs:0x884400, shape:'cylinder', filter:'#ff8800' }, data: [_.S(40), _.T(1, 0.5, 300), _.S(80)] },
+            { id:12, name:"Neon Nights", diff:"Insane", sky: { type: 'grid', c1: '#110022', c2: '#220044', density: 0 }, theme: { floor:0x333333, fog:0x110022, obs:0xff00ff, shape:'box', filter:'#ff00ff' }, data: [_.S(40), _.T(-1, 1.2, 80), _.S(40), _.T(1, 1.2, 80), _.S(80)] },
+            { id:13, name:"Glacier", diff:"Expert", sky: { type: 'gradient', c1: '#004466', c2: '#006699', density: 0 }, theme: { floor:0xddeeff, fog:0x004466, obs:0x0088ff, shape:'cone', filter:'#0088ff' }, data: [_.S(40), _.T(1, 1.5, 40), _.V(-0.2, 120), _.T(-1, 1.5, 40), _.S(80)] },
+            { id:14, name:"Matrix", diff:"Expert", sky: { type: 'digital', c1: '#000000', c2: '#001100', density: 100 }, theme: { floor:0x000000, fog:0x002200, obs:0x00ff00, shape:'box', filter:'#00ff00' }, data: [_.S(40), _.T(-1, 1.8, 40), _.T(1, 1.8, 40), _.V(0.4, 60), _.T(-1, 1.5, 80), _.S(120)] },
+            { id:15, name:"The End", diff:"Expert", sky: { type: 'stars', c1: '#111111', c2: '#333333', density: 100 }, theme: { floor:0x222222, fog:0x111111, obs:0xffffff, shape:'cylinder', filter:'#aaaaaa' }, data: [_.S(40), _.V(-0.4, 100), _.T(1, 1.5, 60), _.V(0.4, 100), _.T(-1, 1.5, 60), _.S(150)] },
+            { id:16, name:"Nebula", diff:"Hard", sky: { type: 'stars', c1: '#220022', c2: '#440044', density: 300 }, theme: { floor:0x220022, fog:0x110033, obs:0x00ffff, shape:'box', filter:'#ff00ff' }, data: [_.S(60), _.T(1, 2.0, 40), _.V(0.5, 80), _.T(-1, 2.0, 40), _.S(80)] },
+            { id:17, name:"Asteroid", diff:"Hard", sky: { type: 'stars', c1: '#111111', c2: '#222222', density: 500 }, theme: { floor:0x443322, fog:0x111111, obs:0x888888, shape:'cone', filter:'#aa5500' }, data: [_.V(-0.5, 100), _.T(1, 1.0, 20), _.T(-1, 1.0, 20), _.T(1, 1.0, 20), _.S(100)] },
+            { id:18, name:"Cyberpunk", diff:"Hard", sky: { type: 'grid', c1: '#222200', c2: '#444400', density: 0 }, theme: { floor:0x001122, fog:0x000022, obs:0xffff00, shape:'box', filter:'#ffff00' }, data: [_.S(40), _.T(1, 2.5, 40), _.V(-0.2, 50), _.T(-1, 2.5, 40), _.S(60)] },
+            { id:19, name:"Black Hole", diff:"Hard", sky: { type: 'gradient', c1: '#000000', c2: '#1a0033', density: 0 }, theme: { floor:0x111111, fog:0x050505, obs:0x5500aa, shape:'cylinder', filter:'#5500aa' }, data: [_.S(40), _.T(-1, 3.0, 20), _.T(1, 3.0, 20), _.V(0.6, 80), _.S(80)] },
+            { id:20, name:"Horizon", diff:"Hard", sky: { type: 'gradient', c1: '#ff9966', c2: '#ff5e62', density: 0 }, theme: { floor:0xffffff, fog:0xffeecc, obs:0xffaa00, shape:'box', filter:'#ffaa00' }, data: [_.S(200), _.V(0.1, 200), _.S(200)] },
+            { id:21, name:"Magma Core", diff:"Insane", sky: { type: 'grid', c1: '#330000', c2: '#ff0000', density: 0 }, theme: { floor:0x330000, fog:0x1a0000, obs:0xff4400, shape:'cone', filter:'#ff4400' }, data: [_.S(50), _.V(-0.4, 80), _.S(20), _.V(-0.4, 80), _.T(1, 1.5, 50), _.T(-1, 1.5, 50), _.S(100)] },
+            { id:22, name:"Serpent", diff:"Insane", sky: { type: 'digital', c1: '#001100', c2: '#002200', density: 50 }, theme: { floor:0x003300, fog:0x001100, obs:0x00ff44, shape:'cylinder', filter:'#00ff44' }, data: [_.S(40), _.T(1, 1.0, 20), _.T(-1, 1.0, 20), _.T(1, 1.0, 20), _.T(-1, 1.0, 20), _.T(1, 1.0, 20), _.T(-1, 1.0, 20), _.S(80)] },
+            { id:23, name:"Sky High", diff:"Expert", sky: { type: 'gradient', c1: '#0099ff', c2: '#ccffff', density: 0 }, theme: { floor:0xeeffff, fog:0xccffff, obs:0x0088ff, shape:'box', filter:'#00aaff' }, data: [_.V(0.5, 200), _.S(20), _.T(1, 2.5, 40), _.V(-0.5, 200), _.S(50)] },
+            { id:24, name:"Nightmare", diff:"Expert", sky: { type: 'stars', c1: '#050005', c2: '#110000', density: 50 }, theme: { floor:0x110011, fog:0x050005, obs:0xff0000, shape:'cone', filter:'#550000' }, data: [_.S(40), _.T(1, 3.0, 30), _.T(-1, 3.0, 30), _.V(-0.3, 100), _.T(1, 2.5, 50), _.S(120)] },
+            { id:25, name:"Quantum", diff:"Master", sky: { type: 'grid', c1: '#ffffff', c2: '#aaaaaa', density: 0 }, theme: { floor:0x222233, fog:0x000011, obs:0xffffff, shape:'box', filter:'#ffffff' }, data: [_.S(60), _.V(0.4, 100), _.T(-1, 3.0, 40), _.V(-0.4, 100), _.T(1, 3.0, 40), _.S(200)] },
+            { id:26, name:"Omega", diff:"Godlike", sky: { type: 'stars', c1: '#000000', c2: '#110022', density: 1000 }, theme: { floor:0x000000, fog:0x000000, obs:0xff00ff, shape:'cylinder', filter:'#ff00ff' }, data: [_.S(100), _.T(1, 1.0, 200), _.T(-1, 1.0, 200), _.S(150)] },
+            { id:27, name:"Inferno", diff:"Godlike", sky: { type: 'gradient', c1: '#220000', c2: '#441100', density: 0 }, theme: { floor:0x440000, fog:0x220000, obs:0xffaa00, shape:'cone', filter:'#ff2200' }, data: [_.V(-0.6, 150), _.T(1, 3.5, 30), _.V(0.6, 150), _.T(-1, 3.5, 30), _.S(100)] },
+            { id:28, name:"Zenith", diff:"Godlike", sky: { type: 'gradient', c1: '#ffffaa', c2: '#ffffff', density: 0 }, theme: { floor:0xffffee, fog:0xffffff, obs:0x444444, shape:'box', filter:'#ffffaa' }, data: [_.S(50), _.T(1, 2.0, 30), _.T(-1, 2.0, 30), _.V(0.2, 300), _.S(50)] },
+            { id:29, name:"Abyss", diff:"Godlike", sky: { type: 'stars', c1: '#000000', c2: '#000000', density: 5 }, theme: { floor:0x050505, fog:0x020202, obs:0x333333, shape:'box', filter:'#111111' }, data: [_.S(50), _.V(-0.7, 250), _.T(1, 4.0, 40), _.S(200)] },
+            { id:30, name:"Firedodo", diff:"Godlike", sky: { type: 'stars', c1: '#220000', c2: '#440000', density: 1000 }, theme: { floor:0xff4400, fog:0x220000, obs:0xffff00, shape:'cylinder', filter:'#ff4400' }, data: [_.S(100), _.T(-1, 2.0, 50), _.V(0.5, 100), _.T(1, 2.0, 50), _.V(-0.5, 100), _.T(-1, 3.0, 50), _.S(300)] }
         ];
 
         function initGame() {
@@ -627,8 +657,8 @@
             const level = LEVELS[idx];
             const theme = level.theme;
 
-            // SKYBOX
-            const skyUrls = generateSkybox(level.sky.c1, level.sky.c2, level.sky.stars);
+            // Generar Skybox según tipo
+            const skyUrls = generateSkybox(level.sky);
             const skyTex = cubeLoader.load(skyUrls);
             scene.background = skyTex;
 

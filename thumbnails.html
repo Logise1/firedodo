@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Firedodo Screenshot Generator</title>
+    <!-- Three.js -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <!-- JSZip para crear el archivo ZIP -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <!-- FileSaver para forzar la descarga -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+
+    <style>
+        body { 
+            background-color: #111; color: #fff; 
+            font-family: monospace; 
+            display: flex; flex-direction: column; align-items: center; justify-content: center; 
+            height: 100vh; margin: 0;
+        }
+        #preview-container {
+            border: 2px solid #444;
+            margin-top: 20px;
+            width: 640px; height: 360px;
+        }
+        button {
+            padding: 15px 30px; font-size: 18px; cursor: pointer;
+            background: #ff4400; color: white; border: none; border-radius: 5px;
+            font-weight: bold; margin-bottom: 20px;
+        }
+        button:disabled { background: #555; cursor: wait; }
+        #status { margin-bottom: 10px; font-size: 16px; color: #aaa; }
+        #progress-bar {
+            width: 640px; height: 10px; background: #333; border-radius: 5px; overflow: hidden;
+        }
+        #progress-fill {
+            width: 0%; height: 100%; background: #00ff00; transition: width 0.1s;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>Generador de Capturas de Niveles</h1>
+    <div id="status">Listo para generar</div>
+    
+    <div id="progress-bar"><div id="progress-fill"></div></div>
+    
+    <br>
+    <button id="btn-gen" onclick="startGeneration()">GENERAR Y DESCARGAR ZIP</button>
+
+    <!-- Canvas se inyectará aquí -->
+    <div id="preview-container"></div>
+
+    <script>
+        // ======================================================
+        // 1. CONFIGURACIÓN Y DATOS (Copiados del juego original)
+        // ======================================================
+        
+        const _ = {
+            S: (len) => ({ t:'S', len }),
+            T: (dir, f, len) => ({ t:'T', dir, f, len }), 
+            V: (slope, len) => ({ t:'V', s:slope, len }),
+            W: (act, len) => ({ t:'W', action: act, len })
+        };
+
+        const CONFIG = {
+            pathWidth: 30,
+            cameraDist: 24,
+            cameraHeight: 18
+        };
+
+        // --- NIVELES (TU LISTA COMPLETA) ---
+        const LEVELS = [
+            { id:0, name:"Tutorial", sky: { type: 'stars', c1: '#000022', c2: '#001133', density: 50 }, theme: { floor:0x444444, fog:0x101020, obs:0xffffff, shape:'box', filter:'#0055ff' }, data: [_.S(50), _.W('right', 30), _.T(1, 0.8, 40), _.S(40), _.W('left', 30), _.T(-1, 0.8, 40), _.S(60), _.V(0.3, 60), _.V(-0.3, 80), _.S(100)] },
+            { id:1, name:"Space Walk", sky: { type: 'stars', c1: '#000000', c2: '#000020', density: 200 }, theme: { floor:0xaaaaaa, fog:0x000010, obs:0x00ffff, shape:'box', filter:'#00ffff' }, data: [_.S(80), _.T(-1, 0.3, 60), _.S(60), _.T(1, 0.3, 60), _.S(100)] },
+            { id:2, name:"Candy Land", sky: { type: 'gradient', c1: '#ffccdd', c2: '#99ccff', density: 0 }, theme: { floor:0xffdddd, fog:0x664455, obs:0xff00aa, shape:'cylinder', filter:'#ff00aa' }, data: [_.S(60), _.T(1, 0.5, 80), _.S(40), _.T(-1, 0.5, 80), _.S(120)] },
+            { id:3, name:"Toxic Waste", sky: { type: 'grid', c1: '#002200', c2: '#004400', density: 50 }, theme: { floor:0xddffdd, fog:0x002200, obs:0x00ff00, shape:'box', filter:'#00ff00' }, data: [_.S(40), _.V(0.2, 100), _.S(40), _.T(-1, 0.5, 60), _.V(0.2, 100), _.S(80)] },
+            { id:4, name:"Solar", sky: { type: 'gradient', c1: '#442200', c2: '#ff8800', density: 0 }, theme: { floor:0xffffcc, fog:0x442200, obs:0xffaa00, shape:'cone', filter:'#ffaa00' }, data: [_.S(40), _.T(1, 0.8, 40), _.T(-1, 0.8, 40), _.T(1, 0.8, 40), _.T(-1, 0.8, 40), _.S(80)] },
+            { id:5, name:"Hyper Speed", sky: { type: 'stars', c1: '#000044', c2: '#000088', density: 300 }, theme: { floor:0xccccff, fog:0x000033, obs:0x4444ff, shape:'cylinder', filter:'#4444ff' }, data: [_.S(150), _.T(-1, 0.2, 100), _.S(200)] },
+            { id:6, name:"Deep Sea", sky: { type: 'gradient', c1: '#000022', c2: '#001144', density: 0 }, theme: { floor:0xaaffff, fog:0x001122, obs:0x00aaaa, shape:'box', filter:'#00aaaa' }, data: [_.S(40), _.V(0.1, 80), _.S(40), _.V(-0.1, 80), _.S(80)] },
+            { id:7, name:"Red Alert", sky: { type: 'grid', c1: '#330000', c2: '#660000', density: 0 }, theme: { floor:0xffaaaa, fog:0x330000, obs:0xff0000, shape:'cone', filter:'#ff0000' }, data: [_.S(40), _.V(-0.3, 150), _.S(80), _.T(1, 0.4, 80), _.S(100)] },
+            { id:8, name:"Jungle", sky: { type: 'gradient', c1: '#00BFFF', c2: '#87CEFA', density: 0 }, theme: { floor:0xaaffaa, fog:0x004411, obs:0x008844, shape:'cylinder', filter:'#00ff44' }, data: [_.S(60), _.T(1, 1.0, 30), _.T(-1, 1.0, 30), _.T(1, 1.0, 30), _.T(-1, 1.0, 30), _.S(100)] },
+            { id:9, name:"Whiteout", sky: { type: 'gradient', c1: '#2F4F4F', c2: '#506070', density: 0 }, theme: { floor:0xffffff, fog:0x506070, obs:0x222222, shape:'box', filter:'#ffffff' }, data: [_.S(40), _.T(1, 1.0, 80), _.S(20), _.T(-1, 1.0, 80), _.S(60)] },
+            { id:10, name:"Void", sky: { type: 'stars', c1: '#000000', c2: '#110011', density: 500 }, theme: { floor:0x666666, fog:0x000000, obs:0xaa00ff, shape:'cone', filter:'#aa00ff' }, data: [_.V(0.3, 60), _.V(-0.3, 60), _.T(1, 0.8, 60), _.V(0.3, 60), _.V(-0.3, 60), _.S(80)] },
+            { id:11, name:"Rusty", sky: { type: 'gradient', c1: '#3e2723', c2: '#5d4037', density: 0 }, theme: { floor:0xddbb99, fog:0x3e2723, obs:0x884400, shape:'cylinder', filter:'#ff8800' }, data: [_.S(40), _.T(1, 0.5, 300), _.S(80)] },
+            { id:12, name:"Neon Nights", sky: { type: 'grid', c1: '#110022', c2: '#220044', density: 0 }, theme: { floor:0x333333, fog:0x110022, obs:0xff00ff, shape:'box', filter:'#ff00ff' }, data: [_.S(40), _.T(-1, 1.2, 80), _.S(40), _.T(1, 1.2, 80), _.S(80)] },
+            { id:13, name:"Glacier", sky: { type: 'gradient', c1: '#004466', c2: '#006699', density: 0 }, theme: { floor:0xddeeff, fog:0x004466, obs:0x0088ff, shape:'cone', filter:'#0088ff' }, data: [_.S(40), _.T(1, 1.5, 40), _.V(-0.2, 120), _.T(-1, 1.5, 40), _.S(80)] },
+            { id:14, name:"Matrix", sky: { type: 'digital', c1: '#000000', c2: '#001100', density: 100 }, theme: { floor:0x000000, fog:0x002200, obs:0x00ff00, shape:'box', filter:'#00ff00' }, data: [_.S(40), _.T(-1, 1.8, 40), _.T(1, 1.8, 40), _.V(0.4, 60), _.T(-1, 1.5, 80), _.S(120)] },
+            { id:15, name:"The End", sky: { type: 'stars', c1: '#111111', c2: '#333333', density: 100 }, theme: { floor:0x222222, fog:0x111111, obs:0xffffff, shape:'cylinder', filter:'#aaaaaa' }, data: [_.S(40), _.V(-0.4, 100), _.T(1, 1.5, 60), _.V(0.4, 100), _.T(-1, 1.5, 60), _.S(150)] },
+            { id:16, name:"Nebula", sky: { type: 'stars', c1: '#220022', c2: '#440044', density: 300 }, theme: { floor:0x220022, fog:0x110033, obs:0x00ffff, shape:'box', filter:'#ff00ff' }, data: [_.S(60), _.T(1, 2.0, 40), _.V(0.5, 80), _.T(-1, 2.0, 40), _.S(80)] },
+            { id:17, name:"Asteroid", sky: { type: 'stars', c1: '#111111', c2: '#222222', density: 500 }, theme: { floor:0x443322, fog:0x111111, obs:0x888888, shape:'cone', filter:'#aa5500' }, data: [_.V(-0.5, 100), _.T(1, 1.0, 20), _.T(-1, 1.0, 20), _.T(1, 1.0, 20), _.S(100)] },
+            { id:18, name:"Cyberpunk", sky: { type: 'grid', c1: '#222200', c2: '#444400', density: 0 }, theme: { floor:0x001122, fog:0x000022, obs:0xffff00, shape:'box', filter:'#ffff00' }, data: [_.S(40), _.T(1, 2.5, 40), _.V(-0.2, 50), _.T(-1, 2.5, 40), _.S(60)] },
+            { id:19, name:"Black Hole", sky: { type: 'gradient', c1: '#000000', c2: '#1a0033', density: 0 }, theme: { floor:0x111111, fog:0x050505, obs:0x5500aa, shape:'cylinder', filter:'#5500aa' }, data: [_.S(40), _.T(-1, 3.0, 20), _.T(1, 3.0, 20), _.V(0.6, 80), _.S(80)] },
+            { id:20, name:"Horizon", sky: { type: 'gradient', c1: '#ff9966', c2: '#ff5e62', density: 0 }, theme: { floor:0xffffff, fog:0xffeecc, obs:0xffaa00, shape:'box', filter:'#ffaa00' }, data: [_.S(200), _.V(0.1, 200), _.S(200)] },
+            { id:21, name:"Magma Core", sky: { type: 'grid', c1: '#330000', c2: '#ff0000', density: 0 }, theme: { floor:0x330000, fog:0x1a0000, obs:0xff4400, shape:'cone', filter:'#ff4400' }, data: [_.S(50), _.V(-0.4, 80), _.S(20), _.V(-0.4, 80), _.T(1, 1.5, 50), _.T(-1, 1.5, 50), _.S(100)] },
+            { id:22, name:"Serpent", sky: { type: 'digital', c1: '#001100', c2: '#002200', density: 50 }, theme: { floor:0x003300, fog:0x001100, obs:0x00ff44, shape:'cylinder', filter:'#00ff44' }, data: [_.S(40), _.T(1, 1.0, 20), _.T(-1, 1.0, 20), _.T(1, 1.0, 20), _.T(-1, 1.0, 20), _.T(1, 1.0, 20), _.T(-1, 1.0, 20), _.S(80)] },
+            { id:23, name:"Sky High", sky: { type: 'gradient', c1: '#0099ff', c2: '#ccffff', density: 0 }, theme: { floor:0xeeffff, fog:0xccffff, obs:0x0088ff, shape:'box', filter:'#00aaff' }, data: [_.V(0.5, 200), _.S(20), _.T(1, 2.5, 40), _.V(-0.5, 200), _.S(50)] },
+            { id:24, name:"Nightmare", sky: { type: 'stars', c1: '#050005', c2: '#110000', density: 50 }, theme: { floor:0x110011, fog:0x050005, obs:0xff0000, shape:'cone', filter:'#550000' }, data: [_.S(40), _.T(1, 3.0, 30), _.T(-1, 3.0, 30), _.V(-0.3, 100), _.T(1, 2.5, 50), _.S(120)] },
+            { id:25, name:"Quantum", sky: { type: 'grid', c1: '#ffffff', c2: '#aaaaaa', density: 0 }, theme: { floor:0x222233, fog:0x000011, obs:0xffffff, shape:'box', filter:'#ffffff' }, data: [_.S(60), _.V(0.4, 100), _.T(-1, 3.0, 40), _.V(-0.4, 100), _.T(1, 3.0, 40), _.S(200)] },
+            { id:26, name:"Omega", sky: { type: 'stars', c1: '#000000', c2: '#110022', density: 1000 }, theme: { floor:0x000000, fog:0x000000, obs:0xff00ff, shape:'cylinder', filter:'#ff00ff' }, data: [_.S(100), _.T(1, 1.0, 200), _.T(-1, 1.0, 200), _.S(150)] },
+            { id:27, name:"Inferno", sky: { type: 'gradient', c1: '#220000', c2: '#441100', density: 0 }, theme: { floor:0x440000, fog:0x220000, obs:0xffaa00, shape:'cone', filter:'#ff2200' }, data: [_.V(-0.6, 150), _.T(1, 3.5, 30), _.V(0.6, 150), _.T(-1, 3.5, 30), _.S(100)] },
+            { id:28, name:"Zenith", sky: { type: 'gradient', c1: '#ffffaa', c2: '#ffffff', density: 0 }, theme: { floor:0xffffee, fog:0xffffff, obs:0x444444, shape:'box', filter:'#ffffaa' }, data: [_.S(50), _.T(1, 2.0, 30), _.T(-1, 2.0, 30), _.V(0.2, 300), _.S(50)] },
+            { id:29, name:"Abyss", sky: { type: 'stars', c1: '#000000', c2: '#000000', density: 5 }, theme: { floor:0x050505, fog:0x020202, obs:0x333333, shape:'box', filter:'#111111' }, data: [_.S(50), _.V(-0.7, 250), _.T(1, 4.0, 40), _.S(200)] },
+            { id:30, name:"Firedodo", sky: { type: 'stars', c1: '#220000', c2: '#440000', density: 1000 }, theme: { floor:0xff4400, fog:0x220000, obs:0xffff00, shape:'cylinder', filter:'#ff4400' }, data: [_.S(100), _.T(-1, 2.0, 50), _.V(0.5, 100), _.T(1, 2.0, 50), _.V(-0.5, 100), _.T(-1, 3.0, 50), _.S(300)] }
+        ];
+
+        // ======================================================
+        // 2. GENERACIÓN DE TEXTURAS (Procedural)
+        // ======================================================
+        
+        function createTexture(width, height, drawFn) {
+            const cvs = document.createElement('canvas');
+            cvs.width = width; cvs.height = height;
+            const ctx = cvs.getContext('2d');
+            drawFn(ctx, width, height);
+            return cvs.toDataURL();
+        }
+
+        function generateSkybox(config) {
+            const { type, c1, c2, density } = config;
+            const textures = [];
+            const drawSky = (ctx, w, h) => {
+                const grad = ctx.createLinearGradient(0, 0, 0, h);
+                grad.addColorStop(0, c1);
+                grad.addColorStop(1, c2);
+                ctx.fillStyle = grad; 
+                ctx.fillRect(0, 0, w, h);
+                if (type === 'stars') {
+                    ctx.fillStyle = '#fff';
+                    for(let i=0; i<density; i++) {
+                        ctx.globalAlpha = Math.random() * 0.8 + 0.2;
+                        ctx.fillRect(Math.random()*w, Math.random()*h, Math.random()*2, Math.random()*2);
+                    }
+                } else if (type === 'grid') {
+                    ctx.strokeStyle = 'rgba(255,255,255,0.1)'; ctx.lineWidth = 2;
+                    for(let i=0; i<w; i+=40) { ctx.beginPath(); ctx.moveTo(i,0); ctx.lineTo(i,h); ctx.stroke(); }
+                    for(let i=0; i<h; i+=40) { ctx.beginPath(); ctx.moveTo(0,i); ctx.lineTo(w,i); ctx.stroke(); }
+                } else if (type === 'digital') {
+                    ctx.fillStyle = '#00ff00';
+                    for(let i=0; i<density; i++) {
+                        ctx.globalAlpha = Math.random() * 0.3;
+                        ctx.fillRect(Math.floor(Math.random() * w / 20) * 20, Math.random() * h, 2, Math.random() * 100);
+                    }
+                }
+            };
+            const dataUrl = createTexture(512, 512, drawSky);
+            for(let i=0; i<6; i++) textures.push(dataUrl);
+            return textures;
+        }
+
+        let floorTexture, playerTexture, textureLoader, cubeLoader;
+
+        function initAssets() {
+            const floorUrl = createTexture(512, 512, (ctx, w, h) => {
+                ctx.fillStyle = '#222'; ctx.fillRect(0,0,w,h);
+                ctx.strokeStyle = '#444'; ctx.lineWidth = 4;
+                for(let i=0; i<=4; i++) { let p=i*(w/4); ctx.moveTo(p,0); ctx.lineTo(p,h); ctx.moveTo(0,p); ctx.lineTo(w,p); }
+                ctx.stroke();
+                ctx.strokeStyle = '#fff'; ctx.lineWidth = 8; ctx.strokeRect(0,0,w,h);
+            });
+            
+            const playerUrl = createTexture(128, 128, (ctx, w, h) => {
+                ctx.fillStyle = '#ff6600'; ctx.fillRect(0,0,w,h);
+                ctx.fillStyle = '#fff'; 
+                ctx.beginPath(); ctx.arc(40, 40, 15, 0, Math.PI*2); ctx.fill();
+                ctx.beginPath(); ctx.arc(88, 40, 15, 0, Math.PI*2); ctx.fill();
+                ctx.fillStyle = '#000';
+                ctx.beginPath(); ctx.arc(40, 40, 5, 0, Math.PI*2); ctx.fill();
+                ctx.beginPath(); ctx.arc(88, 40, 5, 0, Math.PI*2); ctx.fill();
+                ctx.lineWidth = 6; ctx.beginPath(); ctx.arc(64, 80, 30, 0, Math.PI, false); ctx.stroke();
+                ctx.lineWidth = 10; ctx.strokeStyle = '#882200'; ctx.strokeRect(0,0,w,h);
+            });
+
+            textureLoader = new THREE.TextureLoader();
+            cubeLoader = new THREE.CubeTextureLoader();
+            floorTexture = textureLoader.load(floorUrl);
+            floorTexture.wrapS = THREE.RepeatWrapping;
+            floorTexture.wrapT = THREE.RepeatWrapping;
+            playerTexture = textureLoader.load(playerUrl);
+        }
+
+        // ======================================================
+        // 3. MOTOR DE RENDERIZADO
+        // ======================================================
+        
+        let scene, camera, renderer, player;
+        let pathSegments = [], obstacles = [];
+
+        function init3D() {
+            scene = new THREE.Scene();
+            camera = new THREE.PerspectiveCamera(75, 640/360, 0.1, 2000); // Aspect ratio para captura
+            
+            renderer = new THREE.WebGLRenderer({ 
+                antialias: true, 
+                preserveDrawingBuffer: true // IMPORTANTE para poder hacer capturas
+            });
+            renderer.setSize(640, 360);
+            renderer.outputEncoding = THREE.sRGBEncoding;
+            document.getElementById('preview-container').appendChild(renderer.domElement);
+
+            scene.add(new THREE.AmbientLight(0xffffff, 0.5));
+            const dl = new THREE.DirectionalLight(0xffffff, 1.0);
+            dl.position.set(50, 100, 50);
+            dl.castShadow = true;
+            scene.add(dl);
+
+            player = new THREE.Object3D();
+            scene.add(player);
+            
+            const pGeo = new THREE.BoxGeometry(3, 1, 3);
+            const pMat = new THREE.MeshStandardMaterial({ map: playerTexture });
+            const discMesh = new THREE.Mesh(pGeo, pMat);
+            discMesh.position.y = 0.5;
+            player.add(discMesh);
+        }
+
+        function mulberry32(a) {
+            return function() {
+              var t = a += 0x6D2B79F5;
+              t = Math.imul(t ^ t >>> 15, t | 1);
+              t ^= t + Math.imul(t ^ t >>> 7, t | 61);
+              return ((t ^ t >>> 14) >>> 0) / 4294967296;
+            }
+        }
+
+        function loadLevel(idx) {
+            // Limpiar escena anterior
+            pathSegments.forEach(m => scene.remove(m));
+            obstacles.forEach(m => scene.remove(m));
+            pathSegments = []; obstacles = [];
+
+            const level = LEVELS[idx];
+            const theme = level.theme;
+
+            // Configurar Skybox y Niebla
+            const skyUrls = generateSkybox(level.sky);
+            scene.background = cubeLoader.load(skyUrls);
+            scene.fog = new THREE.FogExp2(theme.fog, 0.001);
+
+            // Materiales
+            const matFloor = new THREE.MeshStandardMaterial({ map: floorTexture, roughness: 0.4, color: theme.floor });
+            const matFinish = new THREE.MeshStandardMaterial({ color: 0x00ff00, emissive: 0x005500 });
+            const matObs = new THREE.MeshStandardMaterial({ color: theme.obs, emissive: theme.obs, emissiveIntensity: 0.5 });
+
+            // RNG
+            let rng = mulberry32(level.id * 12345 + 5678);
+
+            // Generar segmentos
+            let cursor = { pos: new THREE.Vector3(0, 0, 30), yaw: 0, pitch: 0 };
+            let segmentCounter = 0;
+
+            const addSegment = (len, dYaw=0, dPitch=0, isFinish=false) => {
+                segmentCounter++;
+                // Lógica idéntica al juego principal
+                const hLen = Math.cos(cursor.pitch) * len; 
+                const vLen = Math.sin(cursor.pitch) * len; 
+                const dx = Math.sin(cursor.yaw) * hLen;
+                const dz = -Math.cos(cursor.yaw) * hLen;
+                const dy = vLen;
+
+                const endPos = new THREE.Vector3(cursor.pos.x + dx, cursor.pos.y + dy, cursor.pos.z + dz);
+                const midPos = new THREE.Vector3().addVectors(cursor.pos, endPos).multiplyScalar(0.5);
+                const geo = new THREE.BoxGeometry(CONFIG.pathWidth, 1, len + 0.5);
+                const mesh = new THREE.Mesh(geo, isFinish ? matFinish : matFloor);
+                
+                mesh.position.copy(midPos);
+                mesh.lookAt(endPos);
+                scene.add(mesh);
+                pathSegments.push(mesh);
+
+                // Obstáculos visuales (solo para la foto)
+                let obsChance = 0.0;
+                if (level.diff === "Easy") obsChance = 0.02;
+                else if (level.diff === "Medium") obsChance = 0.05;
+                else if (level.diff === "Hard") obsChance = 0.10;
+                else if (level.diff === "Insane") obsChance = 0.15;
+                else if (level.diff === "Expert") obsChance = 0.20;
+                else if (level.diff === "Master") obsChance = 0.25;
+                else if (level.diff === "Godlike") obsChance = 0.30;
+
+                if(!isFinish && segmentCounter > 25 && rng() < obsChance) {
+                    let obsGeo = new THREE.BoxGeometry(3,3,3); // Simple para la foto
+                    if (theme.shape === 'cone') obsGeo = new THREE.ConeGeometry(2, 4, 16);
+                    else if (theme.shape === 'cylinder') obsGeo = new THREE.CylinderGeometry(1.5, 1.5, 4, 16);
+
+                    const obs = new THREE.Mesh(obsGeo, matObs);
+                    const maxOffset = (CONFIG.pathWidth / 2) - 4;
+                    const offset = (rng()-0.5) * 2 * maxOffset;
+                    
+                    const rightVec = new THREE.Vector3(1,0,0).applyQuaternion(mesh.quaternion);
+                    const upVec = new THREE.Vector3(0,1,0).applyQuaternion(mesh.quaternion);
+                    
+                    obs.position.copy(mesh.position);
+                    obs.position.add(upVec.multiplyScalar(2)); 
+                    obs.position.add(rightVec.multiplyScalar(offset));
+                    obs.rotation.copy(mesh.rotation);
+                    scene.add(obs);
+                    obstacles.push(obs);
+                }
+
+                cursor.pos.copy(endPos);
+                cursor.yaw += dYaw;
+                cursor.pitch += dPitch;
+            };
+
+            // Construcción del nivel
+            addSegment(60, 0, 0);
+            level.data.forEach(item => {
+                const BASE_SEGMENT_LEN = 5; 
+                if(item.t === 'S') { 
+                    const blocks = Math.ceil(item.len / BASE_SEGMENT_LEN);
+                    for(let i=0; i<blocks; i++) addSegment(BASE_SEGMENT_LEN, 0, 0);
+                }
+                else if(item.t === 'W') { addSegment(item.len, 0, 0); }
+                else if(item.t === 'T') { 
+                    const count = Math.ceil((item.len * 5) / BASE_SEGMENT_LEN); 
+                    const angleStep = (item.dir * item.f) / count;
+                    for(let i=0; i<count; i++) addSegment(BASE_SEGMENT_LEN, angleStep, 0);
+                }
+                else if(item.t === 'V') { 
+                    const count = Math.ceil((item.len * 5) / BASE_SEGMENT_LEN);
+                    cursor.pitch = item.s; 
+                    for(let i=0; i<count; i++) addSegment(BASE_SEGMENT_LEN, 0, 0);
+                    cursor.pitch = 0; 
+                }
+            });
+            addSegment(30, 0, 0, true);
+
+            // Resetear jugador y cámara
+            player.position.set(0,0,0);
+            player.rotation.set(0,0,0);
+            
+            // Posicionar cámara para la foto
+            const camOff = new THREE.Vector3(0, CONFIG.cameraHeight, CONFIG.cameraDist);
+            const target = player.position.clone().add(camOff);
+            camera.position.copy(target);
+            camera.lookAt(player.position.clone().add(new THREE.Vector3(0, 0, -30)));
+        }
+
+        // ======================================================
+        // 4. BUCLE DE GENERACIÓN
+        // ======================================================
+
+        // Función auxiliar para esperar (promesa)
+        const wait = (ms) => new Promise(res => setTimeout(res, ms));
+
+        async function startGeneration() {
+            const btn = document.getElementById('btn-gen');
+            const status = document.getElementById('status');
+            const fill = document.getElementById('progress-fill');
+            
+            btn.disabled = true;
+            
+            initAssets();
+            init3D(); // Inicializar escena
+
+            const zip = new JSZip();
+            const folder = zip.folder("screenshots");
+
+            for (let i = 0; i < LEVELS.length; i++) {
+                const lvl = LEVELS[i];
+                status.innerText = `Procesando Nivel ${lvl.id}: ${lvl.name}...`;
+                
+                loadLevel(i);
+                
+                // Esperar un poco para asegurar que texturas/shaders se carguen
+                await wait(150); 
+                
+                renderer.render(scene, camera);
+                
+                // Convertir canvas a blob y añadir al ZIP
+                const blob = await new Promise(resolve => renderer.domElement.toBlob(resolve, 'image/png'));
+                
+                // Guardar con nombre amigable, ej: level_1.png
+                folder.file(`level_${lvl.id}.png`, blob);
+
+                // Actualizar barra
+                const pct = ((i + 1) / LEVELS.length) * 100;
+                fill.style.width = `${pct}%`;
+                
+                // Pequeña pausa para que el navegador no se congele y actualice la UI
+                await wait(50);
+            }
+
+            status.innerText = "Comprimiendo ZIP...";
+            const content = await zip.generateAsync({type:"blob"});
+            saveAs(content, "niveles_firedodo.zip");
+            
+            status.innerText = "¡Completado! Revisa tus descargas.";
+            btn.disabled = false;
+        }
+
+    </script>
+</body>
+</html>
