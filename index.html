@@ -1325,5 +1325,32 @@
         window.onload = initGame;
 
     </script>
+    <script>
+    if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('sw.js').then(reg => {
+            console.log('SW registrado:', reg);
+            
+            // Detectar si hay una actualización esperando
+            reg.onupdatefound = () => {
+                const newWorker = reg.installing;
+                newWorker.onstatechange = () => {
+                    if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                        // Nueva versión detectada, avisar o recargar
+                        console.log('Nueva versión disponible. Recargando...');
+                        // window.location.reload(); // Descomenta esto si quieres recarga forzosa
+                    }
+                };
+            };
+        }).catch(err => console.error('Error SW:', err));
+
+        // Recargar la página automáticamente cuando el nuevo SW tome el control
+        let refreshing;
+        navigator.serviceWorker.addEventListener('controllerchange', () => {
+            if (refreshing) return;
+            refreshing = true;
+            window.location.reload();
+        });
+    }
+</script>
 </body>
 </html>
