@@ -165,9 +165,9 @@
 
         /* Players online badge */
         .card-online {
-            position: absolute; top: 8px; left: 8px; background: rgba(0,255,0,0.2);
+            position: absolute; top: 8px; left: 8px; background: rgba(0,255,0,0.4);
             color: #00ff00; padding: 2px 6px; border-radius: 4px; font-size: 10px; font-weight: bold;
-            z-index: 3; border: 1px solid #005500; display: none;
+            z-index: 3; border: 1px solid #005500; display: none; text-shadow: 0 0 4px #000;
         }
         
         .diff-Tutorial { color: #ffffff; border-color: #ffffff; background: #0055ff; }
@@ -454,8 +454,8 @@
             }
             updateStatsUI();
             
-            // Start listening to ghost data updates
-            setupGhostSystem();
+            // Start listening to global presence to show online counts on menu
+            window.setupGhostSystem();
         }
 
         // --- STATS & ECONOMY ---
@@ -514,6 +514,39 @@
         };
 
         // --- GHOST SYSTEM (PRESENCE) ---
+        // 0. Setup global presence listener for menu
+        window.setupGhostSystem = () => {
+             // Listener for Menu Counts
+             const q = query(collection(db, "presence"));
+             onSnapshot(q, (snapshot) => {
+                 const now = Date.now();
+                 const levelCounts = {};
+                 
+                 snapshot.forEach((doc) => {
+                     const d = doc.data();
+                     // Check if stale (older than 10 seconds)
+                     if(now - d.ts < 10000 && d.level >= 0) {
+                         levelCounts[d.level] = (levelCounts[d.level] || 0) + 1;
+                     }
+                 });
+
+                 // Update UI for all levels
+                 // Assumes createLevelMenu has run and elements exist
+                 for(let i=0; i<31; i++) { 
+                     const el = document.getElementById(`online-count-${i}`);
+                     if(el) {
+                         const count = levelCounts[i] || 0;
+                         if(count > 0) {
+                             el.innerText = `● ${count} Online`;
+                             el.style.display = 'block';
+                         } else {
+                             el.style.display = 'none';
+                         }
+                     }
+                 }
+             });
+        }
+
         // 1. Update my position to Firestore (throttled)
         window.updateMyPresence = (levelId, pos, rot) => {
             if(!window.GAME_USER) return;
@@ -583,7 +616,6 @@
                         // Update pos
                         const ghost = window.GHOSTS_ACTIVE[uid];
                         ghost.mesh.position.set(data.x, data.y, data.z);
-                        // Store name for label (could add text sprite later)
                     }
                     if (change.type === "removed") {
                         if(window.GHOSTS_ACTIVE[uid]) {
@@ -876,6 +908,12 @@
                 badge.className = `card-badge diff-${lvl.diff}`;
                 badge.innerText = lvl.diff;
 
+                // --- ADD ONLINE COUNT BADGE HERE ---
+                const onlineBadge = document.createElement('div');
+                onlineBadge.className = 'card-online';
+                onlineBadge.id = `online-count-${index}`; // Unique ID for updating
+                onlineBadge.innerText = '0 Online';
+                
                 const rewards = document.createElement('div');
                 rewards.className = 'card-rewards';
                 rewards.innerText = `Recompensa: ${lvl.trophies} 🏆`;
@@ -891,6 +929,7 @@
                 card.appendChild(grad); 
                 card.appendChild(title); 
                 card.appendChild(badge);
+                card.appendChild(onlineBadge); // Append it
                 card.appendChild(rewards);
                 grid.appendChild(card);
             });
