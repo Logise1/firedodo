@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Firedodo</title>
+    <title>Firedodo Online - Racing Update</title>
     
     <!-- PWA META TAGS -->
     <link rel="manifest" href="manifest.json">
@@ -467,7 +467,7 @@
         let ghostUnsubscribe = null;
         let lobbyUnsubscribe = null;
         let presenceInterval = null;
-        let raceTimerInterval = null;
+        // raceTimerInterval removido de aquí ya que es ámbito de modulo y no global
 
         // --- AUTH FUNCTIONS ---
         window.toggleAuthMode = () => {
@@ -951,6 +951,7 @@
         let raceLaps = 0;
         let raceNextLapDist = 500; // Lap every 500 units
         let lastSafePos = new THREE.Vector3(0,0,0);
+        let raceTimerInterval = null; // ADDED HERE FOR SCOPE VISIBILITY
 
         // --- SISTEMA DE CALIDAD ---
         let isLowQuality = false;
@@ -1530,11 +1531,13 @@
             r.addEventListener('mousedown', ()=>handle('r',true));
             r.addEventListener('mouseup', ()=>handle('r',false));
             window.addEventListener('keydown', (e) => {
+                if (!e.key) return; // FIX FOR UNDEFINED KEY
                 const k = e.key.toLowerCase();
                 if(k === 'arrowleft' || k === 'a') handle('l', true);
                 if(k === 'arrowright' || k === 'd') handle('r', true);
             });
             window.addEventListener('keyup', (e) => {
+                if (!e.key) return; // FIX FOR UNDEFINED KEY
                 const k = e.key.toLowerCase();
                 if(k === 'arrowleft' || k === 'a') handle('l', false);
                 if(k === 'arrowright' || k === 'd') handle('r', false);
