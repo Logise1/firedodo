@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Firedodo Online</title>
+    <title>Firedodo</title>
     
     <!-- PWA META TAGS -->
     <link rel="manifest" href="manifest.json">
@@ -72,25 +72,39 @@
         .icon-gold { color: #ffd700; }
         .icon-trophy { color: #00ccff; }
 
-        /* --- LEADERBOARD BUTTON & PANEL --- */
-        #btn-leaderboard {
+        /* --- TOP RIGHT BUTTONS --- */
+        .top-right-btns {
             position: absolute; top: 10px; right: 10px; pointer-events: auto;
-            background: #222; border: 1px solid #444; color: white; padding: 8px 15px;
-            border-radius: 5px; cursor: pointer; z-index: 110; font-weight: bold;
+            display: flex; gap: 10px; z-index: 110;
         }
-        #leaderboard-panel {
+        .header-btn {
+            background: #222; border: 1px solid #444; color: white; padding: 8px 15px;
+            border-radius: 5px; cursor: pointer; font-weight: bold; text-transform: uppercase;
+        }
+        .btn-multiplayer { background: #0044ff; border-color: #0088ff; box-shadow: 0 0 10px #0044ff; animation: pulseMP 2s infinite; }
+        @keyframes pulseMP { 0% { box-shadow: 0 0 5px #0044ff; } 50% { box-shadow: 0 0 15px #0088ff; } 100% { box-shadow: 0 0 5px #0044ff; } }
+
+        /* --- LEADERBOARD & LOBBY PANELS --- */
+        .overlay-panel {
             position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
-            background: #111; width: 80%; max-width: 400px; max-height: 70%;
+            background: #111; width: 90%; max-width: 500px; max-height: 80%;
             overflow-y: auto; z-index: 150; border: 2px solid #ff4400; border-radius: 10px;
-            padding: 20px; display: none; pointer-events: auto;
+            padding: 20px; display: none; pointer-events: auto; box-shadow: 0 0 50px rgba(0,0,0,0.8);
         }
         .lb-row {
-            display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #333;
-            color: #ddd; font-size: 14px;
+            display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #333;
+            color: #ddd; font-size: 14px; align-items: center;
         }
         .lb-rank { color: #ff4400; font-weight: bold; width: 30px; }
         .lb-name { flex: 1; text-align: left; }
         .lb-score { font-weight: bold; color: #00ccff; }
+        
+        /* LOBBY SPECIFIC */
+        #lobby-panel { border-color: #0088ff; }
+        .lobby-status { text-align: center; color: #00ff88; font-size: 18px; margin-bottom: 20px; font-weight: bold; }
+        .player-ready { color: #00ff00; font-weight: bold; }
+        .player-waiting { color: #ffaa00; }
+        .lobby-controls { margin-top: 20px; display: flex; gap: 10px; justify-content: center; }
 
         /* --- TUTORIAL OVERLAY --- */
         #tutorial-overlay {
@@ -174,7 +188,6 @@
             box-shadow: 0 2px 4px rgba(0,0,0,0.8);
         }
 
-        /* Players online badge */
         .card-online {
             position: absolute; top: 8px; left: 8px; background: rgba(0,255,0,0.4);
             color: #00ff00; padding: 2px 6px; border-radius: 4px; font-size: 10px; font-weight: bold;
@@ -238,6 +251,19 @@
             font-size: 12px; color: rgba(255,255,255,0.7); text-transform: uppercase;
         }
 
+        /* RACE HUD SPECIFIC */
+        #race-hud-panel {
+            position: absolute; top: 20px; width: 100%; text-align: center;
+            display: none; flex-direction: column; align-items: center;
+        }
+        .race-timer { font-size: 40px; color: #00ff00; font-weight: bold; text-shadow: 0 0 10px #000; font-family: monospace; }
+        .race-laps { font-size: 20px; color: #fff; background: rgba(0,0,0,0.5); padding: 5px 15px; border-radius: 10px; margin-top: 5px; }
+        .race-respawn-msg {
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            color: #ff0000; font-size: 30px; font-weight: bold; display: none;
+            text-shadow: 0 0 20px #000; background: rgba(0,0,0,0.8); padding: 20px; border: 2px solid red;
+        }
+
         #controls-hint { 
             position: absolute; bottom: 20px; width: 100%; text-align: center; 
             font-size: 12px; color: rgba(255,255,255,0.4); text-transform: uppercase; letter-spacing: 1px; 
@@ -264,6 +290,9 @@
         }
         button.action-btn:hover { background: #ff6600; }
         button.action-btn:active { transform: scale(0.98); }
+        
+        button.ready-btn { background: #00cc00; }
+        button.ready-btn.is-ready { background: #555; color: #aaa; }
         
         button.secondary-btn {
             background: transparent; border: 1px solid #444; color: #aaa;
@@ -330,15 +359,35 @@
             <div class="stat-badge" style="border-color:#555; background:#222;"><span id="stat-username">Guest</span></div>
         </div>
 
-        <button id="btn-leaderboard" onclick="toggleLeaderboard()">CLASIFICACIÓN</button>
+        <div class="top-right-btns">
+            <button class="header-btn btn-multiplayer" onclick="toggleLobby()">MULTIJUGADOR</button>
+            <button class="header-btn" onclick="toggleLeaderboard()">CLASIFICACIÓN</button>
+        </div>
 
         <!-- LEADERBOARD PANEL -->
-        <div id="leaderboard-panel">
+        <div id="leaderboard-panel" class="overlay-panel">
             <h2 style="color:#fff; text-align:center; margin-top:0;">TOP JUGADORES</h2>
             <div id="leaderboard-list">
                 <p style="text-align:center; color:#666;">Cargando...</p>
             </div>
             <button class="secondary-btn" style="width:100%; margin-top:20px;" onclick="toggleLeaderboard()">Cerrar</button>
+        </div>
+
+        <!-- LOBBY PANEL -->
+        <div id="lobby-panel" class="overlay-panel">
+            <h2 style="color:#0088ff; text-align:center; margin-top:0; font-style: italic;">COPA FIREDODO</h2>
+            <p style="text-align:center; color:#aaa; font-size:12px;">Circuito infinito • 60 segundos • Respawns activados</p>
+            
+            <div id="lobby-status-text" class="lobby-status">ESPERANDO JUGADORES...</div>
+            
+            <div id="lobby-players-list" style="min-height: 100px; border: 1px solid #333; padding: 10px; margin-bottom:10px; background:#000;">
+                <!-- Player list here -->
+            </div>
+
+            <div class="lobby-controls">
+                <button id="btn-lobby-ready" class="action-btn ready-btn" onclick="toggleReady()">LISTO</button>
+                <button class="secondary-btn" onclick="leaveLobby()">SALIR</button>
+            </div>
         </div>
 
         <!-- MENU -->
@@ -359,6 +408,14 @@
                 <div id="progress-text">0%</div>
                 <div id="level-name-hud">Level 1</div>
             </div>
+            
+            <!-- RACE HUD -->
+            <div id="race-hud-panel">
+                <div class="race-timer" id="race-timer">60</div>
+                <div class="race-laps" id="race-laps">VUELTAS: 0</div>
+                <div class="race-respawn-msg" id="respawn-msg">¡CRASH! RESPAWN...</div>
+            </div>
+
             <div id="btn-exit" onclick="showMenu()">✕</div>
             <div id="controls-hint">Toque Lados para Girar</div>
         </div>
@@ -372,10 +429,11 @@
         </div>
 
         <div id="level-complete" class="modal-screen win-style hidden">
-            <h2 style="color: #00ff00; margin:0; font-size: 32px;">¡NIVEL COMPLETADO!</h2>
-            <p style="color:#bbb; margin:5px 0 5px 0; font-size: 14px;">Buen trabajo</p>
+            <h2 style="color: #00ff00; margin:0; font-size: 32px;">¡COMPLETADO!</h2>
+            <p id="race-results-title" style="color:#bbb; margin:5px 0 5px 0; font-size: 14px;">Buen trabajo</p>
+            <div id="race-results-list" style="max-height: 100px; overflow-y:auto; width: 100%; margin-bottom: 10px; font-size: 12px; color:white; text-align:left;"></div>
             <p id="reward-text" style="color:#ffd700; margin:0 0 20px 0; font-weight:bold; font-size:16px;">+0 🏆</p>
-            <button class="action-btn" onclick="nextLevel()">Siguiente</button>
+            <button class="action-btn" id="btn-next-level" onclick="nextLevel()">Siguiente</button>
             <button class="secondary-btn" onclick="showMenu()">Menú Principal</button>
         </div>
     </div>
@@ -384,7 +442,7 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js";
         import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, updateProfile } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-auth.js";
-        import { getFirestore, doc, getDoc, setDoc, updateDoc, collection, query, where, onSnapshot, getDocs, orderBy, limit, increment } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js";
+        import { getFirestore, doc, getDoc, setDoc, updateDoc, deleteDoc, collection, query, where, onSnapshot, getDocs, orderBy, limit, increment } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js";
 
         // --- FIREBASE CONFIG ---
         const firebaseConfig = {
@@ -405,8 +463,11 @@
         // --- GLOBAL VARIABLES FOR GAME LOGIC ---
         window.GAME_USER = null; // { uid, username, trophies, coins }
         window.GHOSTS_ACTIVE = {}; // Map of meshes for other players
+        window.LOBBY_ID = "main_lobby";
         let ghostUnsubscribe = null;
+        let lobbyUnsubscribe = null;
         let presenceInterval = null;
+        let raceTimerInterval = null;
 
         // --- AUTH FUNCTIONS ---
         window.toggleAuthMode = () => {
@@ -498,6 +559,7 @@
                 panel.style.display = 'none';
             } else {
                 panel.style.display = 'block';
+                document.getElementById('lobby-panel').style.display = 'none';
                 const list = document.getElementById('leaderboard-list');
                 list.innerHTML = '<p style="text-align:center; color:#666;">Cargando...</p>';
                 
@@ -519,10 +581,117 @@
                         rank++;
                     });
                 } catch(e) {
-                    list.innerHTML = '<p style="color:red;">Error cargando ranking. (Requiere índice)</p>';
-                    console.error(e);
+                    list.innerHTML = '<p style="color:red;">Error cargando ranking.</p>';
                 }
             }
+        };
+
+        // --- MULTIPLAYER LOBBY SYSTEM ---
+        window.toggleLobby = async () => {
+            if(!window.GAME_USER) { alert("Inicia sesión primero"); return; }
+            
+            const panel = document.getElementById('lobby-panel');
+            if(panel.style.display === 'block') {
+                window.leaveLobby();
+            } else {
+                panel.style.display = 'block';
+                document.getElementById('leaderboard-panel').style.display = 'none';
+                window.joinLobby();
+            }
+        }
+
+        window.joinLobby = async () => {
+            // Add user to 'lobby_players' subcollection
+            const userRef = doc(db, "lobbies", window.LOBBY_ID, "players", window.GAME_USER.uid);
+            await setDoc(userRef, {
+                username: window.GAME_USER.username,
+                ready: false,
+                laps: 0,
+                ts: Date.now()
+            });
+
+            // Listen to lobby state
+            const playersQ = query(collection(db, "lobbies", window.LOBBY_ID, "players"));
+            lobbyUnsubscribe = onSnapshot(playersQ, (snapshot) => {
+                const list = document.getElementById('lobby-players-list');
+                list.innerHTML = "";
+                let players = [];
+                let allReady = true;
+                let myReady = false;
+
+                snapshot.forEach(d => {
+                    const p = d.data();
+                    players.push(p);
+                    if(d.id === window.GAME_USER.uid) myReady = p.ready;
+                    if(!p.ready) allReady = false;
+
+                    const div = document.createElement('div');
+                    div.className = "lb-row";
+                    div.innerHTML = `
+                        <span class="lb-name" style="color:${p.ready?'#0f0':'#aaa'}">${p.username}</span>
+                        <span style="font-size:10px; border:1px solid #444; padding:2px 5px;">${p.ready ? 'LISTO' : 'ESPERANDO'}</span>
+                    `;
+                    list.appendChild(div);
+                });
+
+                // Logic to start
+                const statusTxt = document.getElementById('lobby-status-text');
+                const btnReady = document.getElementById('btn-lobby-ready');
+                
+                if(myReady) {
+                    btnReady.innerText = "ESPERANDO...";
+                    btnReady.classList.add('is-ready');
+                } else {
+                    btnReady.innerText = "LISTO";
+                    btnReady.classList.remove('is-ready');
+                }
+
+                if(players.length >= 2) {
+                    // Check if timer should start
+                    if(!window.lobbyTimerStart) window.lobbyTimerStart = Date.now();
+                    
+                    const elapsed = (Date.now() - window.lobbyTimerStart) / 1000;
+                    const remaining = Math.max(0, 30 - elapsed);
+                    
+                    if(allReady || remaining <= 0) {
+                         // START GAME!
+                         window.startMultiplayerRace(players);
+                    } else {
+                        statusTxt.innerText = `INICIO EN ${Math.ceil(remaining)}s`;
+                    }
+                } else {
+                    window.lobbyTimerStart = null;
+                    statusTxt.innerText = "ESPERANDO JUGADORES (MIN 2)...";
+                }
+            });
+        };
+
+        window.toggleReady = async () => {
+            const userRef = doc(db, "lobbies", window.LOBBY_ID, "players", window.GAME_USER.uid);
+            const snap = await getDoc(userRef);
+            if(snap.exists()) {
+                const current = snap.data().ready;
+                await updateDoc(userRef, { ready: !current });
+            }
+        };
+
+        window.leaveLobby = async () => {
+            if(lobbyUnsubscribe) lobbyUnsubscribe();
+            lobbyUnsubscribe = null;
+            window.lobbyTimerStart = null;
+            document.getElementById('lobby-panel').style.display = 'none';
+            if(window.GAME_USER) {
+                await deleteDoc(doc(db, "lobbies", window.LOBBY_ID, "players", window.GAME_USER.uid));
+            }
+        }
+
+        window.startMultiplayerRace = (players) => {
+             // Close lobby UI
+             window.leaveLobby(); // Stops listening to waiting room
+             
+             // Start the actual game in Race Mode
+             // Level 999 is the special Loop Track
+             window.startLevel(999, true); 
         };
 
         // --- GHOST SYSTEM (PRESENCE) ---
@@ -543,7 +712,6 @@
                  });
 
                  // Update UI for all levels
-                 // Assumes createLevelMenu has run and elements exist
                  for(let i=0; i<31; i++) { 
                      const el = document.getElementById(`online-count-${i}`);
                      if(el) {
@@ -777,6 +945,13 @@
 
         let totalLevelLength = 0; 
 
+        // --- VARIABLES DE CARRERA MULTIJUGADOR ---
+        let isRaceMode = false;
+        let raceStartTime = 0;
+        let raceLaps = 0;
+        let raceNextLapDist = 500; // Lap every 500 units
+        let lastSafePos = new THREE.Vector3(0,0,0);
+
         // --- SISTEMA DE CALIDAD ---
         let isLowQuality = false;
 
@@ -788,10 +963,9 @@
                 // MODO BAJO RENDIMIENTO
                 btn.innerText = "CALIDAD: BAJA";
                 btn.classList.add('low-mode');
-                // Ajustes Three.js
                 if(renderer) {
-                    renderer.setPixelRatio(0.8); // Baja resolución drásticamente
-                    renderer.shadowMap.enabled = false; // Adiós sombras
+                    renderer.setPixelRatio(0.8);
+                    renderer.shadowMap.enabled = false;
                 }
             } else {
                 // MODO ALTO RENDIMIENTO
@@ -833,7 +1007,7 @@
         }
 
         // --- NIVELES CONFIGURADOS ---
-        // Trophies added based on difficulty
+        // EDITED: Reduced difficulty for impossible levels
         const LEVELS = [
             { 
                 id:0, name:"Tutorial", diff:"Tutorial", trophies: 0, coins: 5,
@@ -859,7 +1033,10 @@
             { id:16, name:"Nebula", diff:"Hard", trophies: 8, coins: 70, sky: { type: 'stars', c1: '#220022', c2: '#440044', density: 300 }, theme: { floor:0x220022, fog:0x110033, obs:0x00ffff, shape:'box', filter:'#ff00ff' }, data: [_.S(60), _.T(1, 2.0, 40), _.V(0.5, 80), _.T(-1, 2.0, 40), _.S(80)] },
             { id:17, name:"Asteroid", diff:"Hard", trophies: 9, coins: 80, sky: { type: 'stars', c1: '#111111', c2: '#222222', density: 500 }, theme: { floor:0x443322, fog:0x111111, obs:0x888888, shape:'cone', filter:'#aa5500' }, data: [_.V(-0.5, 100), _.T(1, 1.0, 20), _.T(-1, 1.0, 20), _.T(1, 1.0, 20), _.S(100)] },
             { id:18, name:"Cyberpunk", diff:"Hard", trophies: 9, coins: 90, sky: { type: 'grid', c1: '#222200', c2: '#444400', density: 0 }, theme: { floor:0x001122, fog:0x000022, obs:0xffff00, shape:'box', filter:'#ffff00' }, data: [_.S(40), _.T(1, 2.5, 40), _.V(-0.2, 50), _.T(-1, 2.5, 40), _.S(60)] },
-            { id:19, name:"Black Hole", diff:"Hard", trophies: 9, coins: 95, sky: { type: 'gradient', c1: '#000000', c2: '#1a0033', density: 0 }, theme: { floor:0x111111, fog:0x050505, obs:0x5500aa, shape:'cylinder', filter:'#5500aa' }, data: [_.S(40), _.T(-1, 3.0, 20), _.T(1, 3.0, 20), _.V(0.6, 80), _.S(80)] },
+            
+            // EDITED: Black Hole Made Easier (less tight turns)
+            { id:19, name:"Black Hole", diff:"Hard", trophies: 9, coins: 95, sky: { type: 'gradient', c1: '#000000', c2: '#1a0033', density: 0 }, theme: { floor:0x111111, fog:0x050505, obs:0x5500aa, shape:'cylinder', filter:'#5500aa' }, data: [_.S(40), _.T(-1, 1.5, 40), _.T(1, 1.5, 40), _.V(0.6, 80), _.S(80)] },
+            
             { id:20, name:"Horizon", diff:"Hard", trophies: 10, coins: 100, sky: { type: 'gradient', c1: '#ff9966', c2: '#ff5e62', density: 0 }, theme: { floor:0xffffff, fog:0xffeecc, obs:0xffaa00, shape:'box', filter:'#ffaa00' }, data: [_.S(200), _.V(0.1, 200), _.S(200)] },
             { id:21, name:"Magma Core", diff:"Insane", trophies: 12, coins: 130, sky: { type: 'grid', c1: '#330000', c2: '#ff0000', density: 0 }, theme: { floor:0x330000, fog:0x1a0000, obs:0xff4400, shape:'cone', filter:'#ff4400' }, data: [_.S(50), _.V(-0.4, 80), _.S(20), _.V(-0.4, 80), _.T(1, 1.5, 50), _.T(-1, 1.5, 50), _.S(100)] },
             { id:22, name:"Serpent", diff:"Insane", trophies: 12, coins: 140, sky: { type: 'digital', c1: '#001100', c2: '#002200', density: 50 }, theme: { floor:0x003300, fog:0x001100, obs:0x00ff44, shape:'cylinder', filter:'#00ff44' }, data: [_.S(40), _.T(1, 1.0, 20), _.T(-1, 1.0, 20), _.T(1, 1.0, 20), _.T(-1, 1.0, 20), _.T(1, 1.0, 20), _.T(-1, 1.0, 20), _.S(80)] },
@@ -867,11 +1044,24 @@
             { id:24, name:"Nightmare", diff:"Expert", trophies: 15, coins: 400, sky: { type: 'stars', c1: '#050005', c2: '#110000', density: 50 }, theme: { floor:0x110011, fog:0x050005, obs:0xff0000, shape:'cone', filter:'#550000' }, data: [_.S(40), _.T(1, 3.0, 30), _.T(-1, 3.0, 30), _.V(-0.3, 100), _.T(1, 2.5, 50), _.S(120)] },
             { id:25, name:"Quantum", diff:"Master", trophies: 15, coins: 500, sky: { type: 'grid', c1: '#ffffff', c2: '#aaaaaa', density: 0 }, theme: { floor:0x222233, fog:0x000011, obs:0xffffff, shape:'box', filter:'#ffffff' }, data: [_.S(60), _.V(0.4, 100), _.T(-1, 3.0, 40), _.V(-0.4, 100), _.T(1, 3.0, 40), _.S(200)] },
             { id:26, name:"Omega", diff:"Godlike", trophies: 16, coins: 1000, sky: { type: 'stars', c1: '#000000', c2: '#110022', density: 1000 }, theme: { floor:0x000000, fog:0x000000, obs:0xff00ff, shape:'cylinder', filter:'#ff00ff' }, data: [_.S(100), _.T(1, 1.0, 200), _.T(-1, 1.0, 200), _.S(150)] },
-            { id:27, name:"Inferno", diff:"Godlike", trophies: 16, coins: 1000, sky: { type: 'gradient', c1: '#220000', c2: '#441100', density: 0 }, theme: { floor:0x440000, fog:0x220000, obs:0xffaa00, shape:'cone', filter:'#ff2200' }, data: [_.V(-0.6, 150), _.T(1, 3.5, 30), _.V(0.6, 150), _.T(-1, 3.5, 30), _.S(100)] },
+            
+            // EDITED: Inferno made easier (logic in generation will reduce spikes)
+            { id:27, name:"Inferno", diff:"Godlike", trophies: 16, coins: 1000, sky: { type: 'gradient', c1: '#220000', c2: '#441100', density: 0 }, theme: { floor:0x440000, fog:0x220000, obs:0xffaa00, shape:'cone', filter:'#ff2200' }, data: [_.V(-0.6, 150), _.T(1, 2.5, 50), _.V(0.6, 150), _.T(-1, 2.5, 50), _.S(100)] },
+            
             { id:28, name:"Zenith", diff:"Godlike", trophies: 16, coins: 1000, sky: { type: 'gradient', c1: '#ffffaa', c2: '#ffffff', density: 0 }, theme: { floor:0xffffee, fog:0xffffff, obs:0x444444, shape:'box', filter:'#ffffaa' }, data: [_.S(50), _.T(1, 2.0, 30), _.T(-1, 2.0, 30), _.V(0.2, 300), _.S(50)] },
-            { id:29, name:"Abyss", diff:"Godlike", trophies: 16, coins: 1000, sky: { type: 'stars', c1: '#000000', c2: '#000000', density: 5 }, theme: { floor:0x050505, fog:0x020202, obs:0x333333, shape:'box', filter:'#111111' }, data: [_.S(50), _.V(-0.7, 250), _.T(1, 4.0, 40), _.S(200)] },
+            
+            // EDITED: Abyss made passable
+            { id:29, name:"Abyss", diff:"Godlike", trophies: 16, coins: 1000, sky: { type: 'stars', c1: '#000000', c2: '#000000', density: 5 }, theme: { floor:0x050505, fog:0x020202, obs:0x333333, shape:'box', filter:'#111111' }, data: [_.S(50), _.V(-0.5, 250), _.T(1, 2.0, 80), _.S(200)] },
+            
             { id:30, name:"Firedodo", diff:"Godlike", trophies: 16, coins: 5000, sky: { type: 'stars', c1: '#220000', c2: '#440000', density: 1000 }, theme: { floor:0xff4400, fog:0x220000, obs:0xffff00, shape:'cylinder', filter:'#ff4400' }, data: [_.S(100), _.T(-1, 2.0, 50), _.V(0.5, 100), _.T(1, 2.0, 50), _.V(-0.5, 100), _.T(-1, 3.0, 50), _.S(300)] }
         ];
+
+        // ADDED SPECIAL LEVEL FOR RACING
+        const RACE_LEVEL = {
+            id: 999, name: "Grand Prix", diff: "Race", trophies: 5, coins: 50,
+            sky: { type: 'stars', c1: '#000044', c2: '#001144', density: 100 },
+            theme: { floor: 0x333344, fog: 0x000022, obs: 0x00ff00, shape: 'box', filter: '#0044ff' }
+        };
 
         function initGame() {
             initAssets();
@@ -983,6 +1173,10 @@
             isGameActive = false;
             stopBGM();
             
+            // Race cleanup
+            if(raceTimerInterval) clearInterval(raceTimerInterval);
+            isRaceMode = false;
+
             // Clear presence when going to menu
             if(window.clearPresence) window.clearPresence();
             
@@ -993,7 +1187,9 @@
             document.getElementById('level-selector').classList.remove('hidden');
             document.getElementById('tutorial-overlay').style.display = 'none';
             document.getElementById('user-stats').style.display = 'flex';
-            document.getElementById('btn-leaderboard').style.display = 'block';
+            document.querySelector('.top-right-btns').style.display = 'flex';
+            
+            // Re-render menu to update stats
             createLevelMenu(); 
         }
 
@@ -1054,7 +1250,14 @@
         function generateLevel(idx) {
             cleanupScene();
 
-            const level = LEVELS[idx];
+            let level;
+            // CHECK IF RACE MODE
+            if(idx === 999) {
+                 level = RACE_LEVEL;
+            } else {
+                 level = LEVELS[idx];
+            }
+            
             const theme = level.theme;
 
             const skyUrls = generateSkybox(level.sky);
@@ -1063,7 +1266,7 @@
 
             let rng = mulberry32(level.id * 12345 + 5678);
 
-            document.getElementById('level-name-hud').innerText = `${level.id}. ${level.name}`;
+            document.getElementById('level-name-hud').innerText = `${isRaceMode ? 'GRAND PRIX' : level.id + '. ' + level.name}`;
 
             window.scene.fog.color.setHex(theme.fog);
             document.getElementById('color-overlay').style.backgroundColor = theme.filter;
@@ -1108,13 +1311,21 @@
                 pathSegments.push(mesh);
 
                 let obsChance = 0.0;
-                if (level.diff === "Easy") obsChance = 0.02;
-                else if (level.diff === "Medium") obsChance = 0.05;
-                else if (level.diff === "Hard") { obsChance = 0.10; }
-                else if (level.diff === "Insane") { obsChance = 0.15; }
-                else if (level.diff === "Expert") { obsChance = 0.20; }
-                else if (level.diff === "Master") { obsChance = 0.25; }
-                else if (level.diff === "Godlike") { obsChance = 0.30; }
+                if(!isRaceMode) {
+                    if (level.diff === "Easy") obsChance = 0.02;
+                    else if (level.diff === "Medium") obsChance = 0.05;
+                    else if (level.diff === "Hard") { obsChance = 0.10; }
+                    else if (level.diff === "Insane") { obsChance = 0.15; }
+                    else if (level.diff === "Expert") { obsChance = 0.20; }
+                    else if (level.diff === "Godlike") { 
+                        // FIX: Reduced difficulty for Godlike levels specifically
+                        if(level.name === "Inferno" || level.name === "Abyss") obsChance = 0.08; 
+                        else obsChance = 0.30; 
+                    }
+                } else {
+                    // RACE MODE OBSTACLES (SPARSE)
+                    obsChance = 0.05;
+                }
 
                 if(!isFinish && !mesh.userData.isTutorial && segmentCounter > 25 && rng() < obsChance) {
                     let obsGeo;
@@ -1144,46 +1355,62 @@
                 cursor.pitch += dPitch;
             };
 
-            addSegment(60, 0, 0);
-            level.data.forEach(item => {
-                const BASE_SEGMENT_LEN = 5; 
-                if(item.t === 'S') { 
-                    const blocks = Math.ceil(item.len / BASE_SEGMENT_LEN);
-                    for(let i=0; i<blocks; i++) addSegment(BASE_SEGMENT_LEN, 0, 0);
+            if(isRaceMode) {
+                // GENERATE INFINITE LOOP (SPIRAL)
+                addSegment(60, 0, 0);
+                // Create a massive track
+                for(let i=0; i<300; i++) {
+                     // Alternating turns and ups/downs to create a rollercoaster loop
+                     if(i%20 < 10) addSegment(10, 0.1, 0.05); // Right Up
+                     else addSegment(10, -0.1, -0.05); // Left Down
+                     
+                     if(i%50 === 0) addSegment(50, 0, 0); // Straights
                 }
-                else if(item.t === 'W') { addSegment(item.len, 0, 0, item); }
-                else if(item.t === 'T') { 
-                    const count = Math.ceil((item.len * 5) / BASE_SEGMENT_LEN); 
-                    const angleStep = (item.dir * item.f) / count;
-                    for(let i=0; i<count; i++) addSegment(BASE_SEGMENT_LEN, angleStep, 0);
-                }
-                else if(item.t === 'V') { 
-                    const count = Math.ceil((item.len * 5) / BASE_SEGMENT_LEN);
-                    const targetPitch = item.s; 
-                    cursor.pitch = targetPitch; 
-                    for(let i=0; i<count; i++) addSegment(BASE_SEGMENT_LEN, 0, 0);
-                    cursor.pitch = 0; 
-                }
-            });
-            addSegment(30, 0, 0, null, true);
+            } else {
+                addSegment(60, 0, 0);
+                level.data.forEach(item => {
+                    const BASE_SEGMENT_LEN = 5; 
+                    if(item.t === 'S') { 
+                        const blocks = Math.ceil(item.len / BASE_SEGMENT_LEN);
+                        for(let i=0; i<blocks; i++) addSegment(BASE_SEGMENT_LEN, 0, 0);
+                    }
+                    else if(item.t === 'W') { addSegment(item.len, 0, 0, item); }
+                    else if(item.t === 'T') { 
+                        const count = Math.ceil((item.len * 5) / BASE_SEGMENT_LEN); 
+                        const angleStep = (item.dir * item.f) / count;
+                        for(let i=0; i<count; i++) addSegment(BASE_SEGMENT_LEN, angleStep, 0);
+                    }
+                    else if(item.t === 'V') { 
+                        const count = Math.ceil((item.len * 5) / BASE_SEGMENT_LEN);
+                        const targetPitch = item.s; 
+                        cursor.pitch = targetPitch; 
+                        for(let i=0; i<count; i++) addSegment(BASE_SEGMENT_LEN, 0, 0);
+                        cursor.pitch = 0; 
+                    }
+                });
+                addSegment(30, 0, 0, null, true);
+            }
         }
 
-        function startLevel(idx) {
+        // EDITED: Supports Race Mode
+        window.startLevel = function(idx, isRace = false) {
             // Can't play without auth
             if(!window.GAME_USER) {
                 alert("Debes iniciar sesión para jugar online.");
                 return;
             }
 
+            isRaceMode = isRace;
             currentLevel = idx;
+            
             try { document.documentElement.requestFullscreen().catch(()=>{}); } catch(e){}
             document.getElementById('ui-layer').style.background = "transparent";
             document.getElementById('level-selector').classList.add('hidden');
             document.getElementById('game-over').classList.add('hidden');
             document.getElementById('level-complete').classList.add('hidden');
             document.getElementById('game-ui').style.display = 'block';
-            document.getElementById('user-stats').style.display = 'none'; // Hide stats during game
-            document.getElementById('btn-leaderboard').style.display = 'none';
+            document.getElementById('user-stats').style.display = 'none'; 
+            document.querySelector('.top-right-btns').style.display = 'none';
             
             player.position.set(0, 0, 0);
             player.rotation.set(0, 0, 0);
@@ -1201,18 +1428,91 @@
             clock.start();
             playBGM();
 
-            // Subscribe to ghosts for this level
-            if(window.subscribeToLevelGhosts) window.subscribeToLevelGhosts(idx);
+            if(isRaceMode) {
+                 setupRaceMode();
+                 if(window.subscribeToLevelGhosts) window.subscribeToLevelGhosts(999);
+            } else {
+                 document.getElementById('progress-container').style.display = 'flex';
+                 document.getElementById('race-hud-panel').style.display = 'none';
+                 if(window.subscribeToLevelGhosts) window.subscribeToLevelGhosts(idx);
+            }
+        }
+
+        function setupRaceMode() {
+             document.getElementById('progress-container').style.display = 'none';
+             document.getElementById('race-hud-panel').style.display = 'flex';
+             document.getElementById('respawn-msg').style.display = 'none';
+             
+             raceStartTime = Date.now();
+             raceLaps = 0;
+             raceNextLapDist = 500;
+             lastSafePos.set(0,0,0);
+             
+             document.getElementById('race-laps').innerText = "VUELTAS: 0";
+             
+             // Race Timer (60s)
+             if(raceTimerInterval) clearInterval(raceTimerInterval);
+             raceTimerInterval = setInterval(() => {
+                 if(!isGameActive) return;
+                 const elapsed = (Date.now() - raceStartTime) / 1000;
+                 const remaining = Math.max(0, 60 - elapsed);
+                 document.getElementById('race-timer').innerText = remaining.toFixed(1);
+                 
+                 if(remaining <= 0) {
+                     endRace();
+                 }
+             }, 100);
+        }
+
+        function respawnRace() {
+             const msg = document.getElementById('respawn-msg');
+             msg.style.display = 'block';
+             
+             // Put player back a bit and up
+             player.position.copy(lastSafePos);
+             player.position.y += 10;
+             playerVelY = 0;
+             player.rotation.set(0,0,0); // Reset rotation (might be glitchy but playable)
+             
+             setTimeout(() => {
+                 msg.style.display = 'none';
+             }, 1500);
+        }
+
+        async function endRace() {
+            isGameActive = false;
+            clearInterval(raceTimerInterval);
+            stopBGM();
+            playSound('win');
+            
+            const resultsDiv = document.getElementById('race-results-list');
+            resultsDiv.innerHTML = "Cargando resultados de oponentes...";
+            
+            // Fetch everyone's laps from lobby (assuming they updated it)
+            // For this simplified version, we just show our laps vs ghosts roughly
+            // Update my laps one last time
+            if(window.GAME_USER && window.LOBBY_ID) {
+                // We abuse the updateMyPresence to signal completion or store final score in lobby doc?
+                // Lets just show "Tiempos agotado"
+            }
+
+            const trophiesWon = raceLaps * 5;
+            window.addReward(trophiesWon, trophiesWon * 10);
+            
+            document.getElementById('level-complete').classList.remove('hidden');
+            document.getElementById('race-results-title').innerText = "¡TIEMPO AGOTADO!";
+            resultsDiv.innerHTML = `Hiciste <span style="color:#0f0; font-size:16px;">${raceLaps}</span> vueltas.`;
+            document.getElementById('reward-text').innerText = `+${trophiesWon} 🏆`;
+            document.getElementById('btn-next-level').style.display = 'none';
         }
 
         function restartLevel() { 
             stopBGM();
-            startLevel(currentLevel); 
+            startLevel(currentLevel, isRaceMode); 
         }
         
         function nextLevel() { 
             stopBGM();
-            // Rewards Logic is handled in the win condition
             if(currentLevel < LEVELS.length - 1) startLevel(currentLevel + 1);
             else showMenu();
         }
@@ -1251,13 +1551,30 @@
             if(isGameActive) {
                 // CALCULAR PROGRESO
                 const distanceTraveled = Math.abs(player.position.z); 
-                let percent = Math.floor((distanceTraveled / totalLevelLength) * 100);
-                if(percent > 100) percent = 100;
-                document.getElementById('progress-text').innerText = `${percent}%`;
+                
+                if(isRaceMode) {
+                    // Update safe pos every second roughly
+                    if(Math.floor(distanceTraveled) % 50 === 0) {
+                        lastSafePos.copy(player.position);
+                    }
+
+                    // Check Laps
+                    if(distanceTraveled > raceNextLapDist) {
+                        raceLaps++;
+                        raceNextLapDist += 500;
+                        document.getElementById('race-laps').innerText = `VUELTAS: ${raceLaps}`;
+                        // Visual fanfare?
+                        window.addReward(5, 0); // Give trophies immediately!
+                    }
+                } else {
+                    let percent = Math.floor((distanceTraveled / totalLevelLength) * 100);
+                    if(percent > 100) percent = 100;
+                    document.getElementById('progress-text').innerText = `${percent}%`;
+                }
 
                 // --- SEND MULTIPLAYER PRESENCE ---
                 if(window.updateMyPresence) {
-                    window.updateMyPresence(currentLevel, player.position, player.rotation.y);
+                    window.updateMyPresence(isRaceMode ? 999 : currentLevel, player.position, player.rotation.y);
                 }
 
                 const turn = CONFIG.turnSpeed * dt;
@@ -1288,13 +1605,12 @@
                     if(distToFloor < 5 && distToFloor > -8) { 
                         player.position.y = hit.point.y;
                         playerVelY = 0;
-                        if(hit.object.userData.isFinish) {
-                            // WIN LOGIC
+                        if(hit.object.userData.isFinish && !isRaceMode) {
+                            // WIN LOGIC (NORMAL)
                             isGameActive = false;
                             stopBGM();
                             playSound('win');
                             
-                            // Add Rewards
                             const lvl = LEVELS[currentLevel];
                             if(window.addReward) {
                                 window.addReward(lvl.trophies, lvl.coins);
@@ -1338,11 +1654,15 @@
 
                 // MUERTE POR VACÍO
                 if(player.position.y < -500) {
-                    isGameActive = false;
-                    stopBGM();
-                    playSound('death');
-                    document.getElementById('fail-reason').innerText = "Caída al vacío";
-                    document.getElementById('game-over').classList.remove('hidden');
+                    if(isRaceMode) {
+                        respawnRace();
+                    } else {
+                        isGameActive = false;
+                        stopBGM();
+                        playSound('death');
+                        document.getElementById('fail-reason').innerText = "Caída al vacío";
+                        document.getElementById('game-over').classList.remove('hidden');
+                    }
                 }
 
                 discMesh.rotation.y += 10.0 * dt; 
@@ -1351,11 +1671,16 @@
                 // MUERTE POR OBSTÁCULO (RÁPIDA)
                 for(let o of obstacles) {
                     if(player.position.distanceToSquared(o.position) < 15) {
-                        isGameActive = false;
-                        stopBGM();
-                        playSound('death');
-                        setTimeout(() => { restartLevel(); }, 500);
-                        return;
+                        if(isRaceMode) {
+                             respawnRace();
+                             break;
+                        } else {
+                            isGameActive = false;
+                            stopBGM();
+                            playSound('death');
+                            setTimeout(() => { restartLevel(); }, 500);
+                            return;
+                        }
                     }
                 }
             }
